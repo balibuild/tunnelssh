@@ -63,6 +63,9 @@ func (c *client) ParseArgv() error {
 	ae.Add("port", cli.REQUIRED, 'p')
 	ae.Add("no-tty", cli.OPTIONAL, 'T') // default no tty
 	ae.Add("force-tty", cli.OPTIONAL, 't')
+	if cli.IsTrue(os.Getenv("TUNNEL_DEBUG")) {
+		IsDebugMode = true
+	}
 	return nil
 }
 
