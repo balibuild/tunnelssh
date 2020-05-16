@@ -89,7 +89,7 @@ func basicAuth(ui *url.Userinfo) string {
 }
 
 // DialTunnelSock5 todo
-func DialTunnelSock5(u *url.URL, addr string) (net.Conn, error) {
+func DialTunnelSock5(u *url.URL, paddr, addr string) (net.Conn, error) {
 	//proxy.SOCKS5()
 	//proxy.SOCKS5()
 	proxy.SOCKS5("tcp", addr, nil, nil)
@@ -97,7 +97,7 @@ func DialTunnelSock5(u *url.URL, addr string) (net.Conn, error) {
 }
 
 // DialTunnelSSH over ssh
-func DialTunnelSSH(u *url.URL, addr string, config *ssh.ClientConfig) (net.Conn, error) {
+func DialTunnelSSH(u *url.URL, paddr, addr string, config *ssh.ClientConfig) (net.Conn, error) {
 	//conn,err:=ssh.Dial()
 	var name string
 	if u.User != nil {
@@ -122,18 +122,17 @@ func DailTunnelInternal(pu, addr string, config *ssh.ClientConfig) (net.Conn, er
 	if err != nil {
 		return nil, err
 	}
-	ph, _ := splitHostPort(addr)
-	address := urlMakeAddress(u)
+	paddr := urlMakeAddress(u)
 	var conn net.Conn
 	switch u.Scheme {
 	case "https":
-		conn, err = tls.Dial("tcp", address, nil)
+		conn, err = tls.Dial("tcp", paddr, nil)
 	case "http":
-		conn, err = net.DialTimeout("tcp", address, 10*time.Second)
+		conn, err = net.DialTimeout("tcp", paddr, 10*time.Second)
 	case "socks5":
-		return DialTunnelSock5(u, addr)
+		return DialTunnelSock5(u, paddr, addr)
 	case "ssh":
-		return DialTunnelSSH(u, addr, config)
+		return DialTunnelSSH(u, paddr, addr, config)
 	default:
 		return nil, cli.ErrorCat("not support current scheme", u.Scheme)
 	}
@@ -142,8 +141,9 @@ func DailTunnelInternal(pu, addr string, config *ssh.ClientConfig) (net.Conn, er
 	}
 	var buf bytes.Buffer
 	buf.Grow(512)
+	ph, _ := splitHostPort(addr)
 	_, _ = buf.WriteString("CONNECT ")
-	_, _ = buf.WriteString(address)
+	_, _ = buf.WriteString(addr)
 	_, _ = buf.WriteString(" HTTP/1.1\nHost: ")
 	_, _ = buf.WriteString(ph) // Host information
 	_, _ = buf.WriteString("\nProxy-Connection: Keep-Alive\nContent-Length: 0\nUser-Agent:SSH/9.0\n")
