@@ -5,7 +5,7 @@ package main
 import (
 	"os/exec"
 
-	"github.com/balibuild/tunelssh/cli"
+	"github.com/balibuild/tunnelssh/cli"
 	"golang.org/x/sys/windows/registry"
 )
 

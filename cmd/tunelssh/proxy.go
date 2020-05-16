@@ -12,7 +12,6 @@ import (
 
 	"github.com/balibuild/tunnelssh/cli"
 	"golang.org/x/crypto/ssh"
-	"golang.org/x/net/proxy"
 )
 
 // SSH_PROXY
@@ -84,14 +83,6 @@ func basicAuth(ui *url.Userinfo) string {
 	passwd, _ := ui.Password()
 	auth := ui.Username() + ":" + passwd
 	return base64.StdEncoding.EncodeToString([]byte(auth))
-}
-
-// DialTunnelSock5 todo
-func DialTunnelSock5(u *url.URL, paddr, addr string) (net.Conn, error) {
-	//proxy.SOCKS5()
-	//proxy.SOCKS5()
-	proxy.SOCKS5("tcp", addr, nil, nil)
-	return nil, nil
 }
 
 // DailTunnelInternal todo

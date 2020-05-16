@@ -1,16 +1,13 @@
 package main
 
 import (
-	"net"
-
 	"golang.org/x/crypto/ssh"
 )
 
 //
 
 type client struct {
-	ssh  *ssh.Client
-	conn net.Conn
+	ssh *ssh.Client
 }
 
 // DialTunnel todo

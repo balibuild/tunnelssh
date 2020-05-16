@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-// tunelssh cli
+// tunnelssh cli
 
 // flags
 const (
