@@ -5,7 +5,7 @@ import (
 	"net"
 	"os"
 
-	"github.com/balibuild/tunelssh/cli"
+	"github.com/balibuild/tunnelssh/cli"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/knownhosts"
 )

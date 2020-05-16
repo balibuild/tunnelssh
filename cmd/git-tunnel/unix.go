@@ -4,7 +4,7 @@ package main
 
 // define
 const (
-	SSHEnv = "GIT_SSH=tunelssh"
+	SSHEnv = "GIT_SSH=tunnelssh"
 )
 
 func InitializeEnv() error {

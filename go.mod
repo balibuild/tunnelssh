@@ -1,4 +1,4 @@
-module github.com/balibuild/tunelssh
+module github.com/balibuild/tunnelssh
 
 go 1.14
 

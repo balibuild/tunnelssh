@@ -11,7 +11,7 @@ import (
 
 // define
 const (
-	SSHEnv = "GIT_SSH=tunelssh.exe"
+	SSHEnv = "GIT_SSH=tunnelssh.exe"
 )
 
 //InitializeGW todo

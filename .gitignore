@@ -18,4 +18,5 @@
 *.tar.gz
 *.zip
 /*.sh
-cmd/tunelssh/tunelssh
+/cmd/tunnelssh/tunnelssh
+/cmd/git-tunnel/git-tunnel

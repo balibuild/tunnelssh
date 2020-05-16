@@ -1,3 +1,3 @@
-# git-tunel
+# git-tunnel
 
 Let git use the proxy happily

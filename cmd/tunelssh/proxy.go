@@ -2,13 +2,14 @@ package main
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/base64"
 	"errors"
 	"net"
 	"net/url"
 	"strings"
 
-	"github.com/balibuild/tunelssh/cli"
+	"github.com/balibuild/tunnelssh/cli"
 )
 
 // SSH_PROXY
@@ -19,7 +20,7 @@ var (
 )
 
 func schemePort(scheme string) string {
-	switch strings.ToLower(scheme) {
+	switch scheme {
 	case "http":
 		return "80"
 	case "https":
@@ -83,18 +84,43 @@ func basicAuth(ui *url.Userinfo) string {
 	return base64.StdEncoding.EncodeToString([]byte(auth))
 }
 
+// DialTunnelSock5 todo
+func DialTunnelSock5(u *url.URL, addr string) (net.Conn, error) {
+	//proxy.SOCKS5()
+	//proxy.SOCKS5()
+	return nil, nil
+}
+
+// DialTunnelSSH over ssh
+func DialTunnelSSH(u *url.URL, addr string) (net.Conn, error) {
+	//conn,err:=ssh.Dial()
+	return nil, nil
+}
+
 // DailTunelInternal todo
-func DailTunelInternal(proxy, addr string) (net.Conn, error) {
-	if strings.Index(proxy, "://") == -1 {
-		proxy = "http://" + proxy // avoid proxy url parse failed
+func DailTunelInternal(pu, addr string) (net.Conn, error) {
+	if strings.Index(pu, "://") == -1 {
+		proxy = "http://" + pu // avoid proxy url parse failed
 	}
-	u, err := url.Parse(proxy)
+	u, err := url.Parse(pu)
 	if err != nil {
 		return nil, err
 	}
 	ph, _ := splitHostPort(addr)
 	address := urlMakeAddress(u)
-	conn, err := net.Dial("tcp", address)
+	var conn net.Conn
+	switch u.Scheme {
+	case "https":
+		conn, err = tls.Dial("tcp", address, nil)
+	case "http":
+		conn, err = net.Dial("tcp", address)
+	case "socks5":
+		return DialTunnelSock5(u, addr)
+	case "ssh":
+		return DialTunnelSSH(u, addr)
+	default:
+		return nil, cli.ErrorCat("not support current scheme", u.Scheme)
+	}
 	if err != nil {
 		return nil, cli.ErrorCat("Counld't establish connection to proxy: ", err.Error())
 	}
