@@ -164,7 +164,6 @@ func DailTunnelInternal(pu, addr string, config *ssh.ClientConfig) (net.Conn, er
 	case "ssh":
 		return DialTunnelSSH(u, paddr, addr, config)
 	default:
-
 	}
 	return nil, cli.ErrorCat("not support current scheme", u.Scheme)
 }
