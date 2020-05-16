@@ -28,14 +28,14 @@ var (
 )
 
 func version() {
-	fmt.Fprint(os.Stdout, "Bali - Minimalist Golang build and packaging tool\nversion:       ", VERSION, "\n",
+	fmt.Fprint(os.Stdout, "tunnelssh - A witty ssh client that automatically accesses a remote server through a proxy\nversion:       ", VERSION, "\n",
 		"build branch:  ", BUILDBRANCH, "\n",
 		"build commit:  ", BUILDCOMMIT, "\n",
 		"build time:    ", BUILDTIME, "\n",
 		"go version:    ", GOVERSION, "\n")
 }
 func usage() {
-	fmt.Fprintf(os.Stdout, `tunnelssh - Minimalist Golang build and packaging tool
+	fmt.Fprintf(os.Stdout, `tunnelssh - A witty ssh client that automatically accesses a remote server through a proxy
 usage: %s <option> args ...
   -h|--help        Show usage text and quit
   -v|--version     Show version number and quit

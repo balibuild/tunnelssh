@@ -1,6 +1,6 @@
 # Tunnel SSH Client
 
-SSH client capable of automatically using a proxy
+A witty ssh client that automatically accesses a remote server through a proxy
 
 
 ## Git Over SSH integration
