@@ -18,6 +18,54 @@ func DebugPrint(format string, a ...interface{}) {
 	}
 }
 
+// version info
+var (
+	VERSION     = "1.0"
+	BUILDTIME   string
+	BUILDCOMMIT string
+	BUILDBRANCH string
+	GOVERSION   string
+)
+
+func version() {
+	fmt.Fprint(os.Stdout, "Bali - Minimalist Golang build and packaging tool\nversion:       ", VERSION, "\n",
+		"build branch:  ", BUILDBRANCH, "\n",
+		"build commit:  ", BUILDCOMMIT, "\n",
+		"build time:    ", BUILDTIME, "\n",
+		"go version:    ", GOVERSION, "\n")
+}
+func usage() {
+	fmt.Fprintf(os.Stdout, `tunnelssh - Minimalist Golang build and packaging tool
+usage: %s <option> args ...
+  -h|--help        Show usage text and quit
+  -v|--version     Show version number and quit
+`, os.Args[0])
+}
+
+func (c *client) Invoke(val int, oa, raw string) error {
+	switch val {
+	case 'h':
+	case 'v':
+	case 'V':
+	case 'p':
+	case 'T':
+	case 't':
+	default:
+	}
+	return nil
+}
+
+func (c *client) ParseArgv() error {
+	var ae cli.ArgvParser
+	ae.Add("help", cli.NOARG, 'h')
+	ae.Add("version", cli.NOARG, 'v')
+	ae.Add("verbose", cli.NOARG, 'V')
+	ae.Add("port", cli.REQUIRED, 'p')
+	ae.Add("no-tty", cli.OPTIONAL, 'T') // default no tty
+	ae.Add("force-tty", cli.OPTIONAL, 't')
+	return nil
+}
+
 func main() {
 	//
 }

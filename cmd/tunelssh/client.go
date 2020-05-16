@@ -7,7 +7,8 @@ import (
 //
 
 type client struct {
-	ssh *ssh.Client
+	ssh  *ssh.Client
+	argv []string
 }
 
 // DialTunnel todo
