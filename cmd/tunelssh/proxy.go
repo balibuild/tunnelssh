@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/balibuild/tunnelssh/cli"
+	"golang.org/x/crypto/ssh"
 	"golang.org/x/net/proxy"
 )
 
@@ -94,13 +95,13 @@ func DialTunnelSock5(u *url.URL, addr string) (net.Conn, error) {
 }
 
 // DialTunnelSSH over ssh
-func DialTunnelSSH(u *url.URL, addr string) (net.Conn, error) {
+func DialTunnelSSH(u *url.URL, addr string, config *ssh.ClientConfig) (net.Conn, error) {
 	//conn,err:=ssh.Dial()
 	return nil, nil
 }
 
-// DailTunelInternal todo
-func DailTunelInternal(pu, addr string) (net.Conn, error) {
+// DailTunnelInternal todo
+func DailTunnelInternal(pu, addr string, config *ssh.ClientConfig) (net.Conn, error) {
 	if strings.Index(pu, "://") == -1 {
 		pu = "http://" + pu // avoid proxy url parse failed
 	}
@@ -119,7 +120,7 @@ func DailTunelInternal(pu, addr string) (net.Conn, error) {
 	case "socks5":
 		return DialTunnelSock5(u, addr)
 	case "ssh":
-		return DialTunnelSSH(u, addr)
+		return DialTunnelSSH(u, addr, config)
 	default:
 		return nil, cli.ErrorCat("not support current scheme", u.Scheme)
 	}

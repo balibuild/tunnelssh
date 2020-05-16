@@ -15,5 +15,8 @@ func ResolveProxy() (string, error) {
 	if s := os.Getenv("HTTP_PROXY"); len(s) > 0 {
 		return s, nil
 	}
+	if s := os.Getenv("ALL_PROXY"); len(s) > 0 {
+		return s, nil
+	}
 	return "", ErrProxyNotConfigured
 }
