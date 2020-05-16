@@ -29,5 +29,6 @@ func Dial(network, addr string, config *ssh.ClientConfig) (*ssh.Client, error) {
 		DebugPrint("resolve proxy config: %s", ps.ProxyServer)
 		return DialTunnel(ps.ProxyServer, network, addr, config)
 	}
+	DebugPrint("no proxy env found direct dail: %s", addr)
 	return ssh.Dial(network, addr, config)
 }
