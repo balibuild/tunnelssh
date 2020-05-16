@@ -1,15 +1,12 @@
 package main
 
 import (
-	"bytes"
-	"crypto/tls"
 	"encoding/base64"
 	"errors"
 	"net"
 	"net/url"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/balibuild/tunnelssh/cli"
 	"golang.org/x/crypto/ssh"
@@ -159,47 +156,15 @@ func DailTunnelInternal(pu, addr string, config *ssh.ClientConfig) (net.Conn, er
 		return nil, err
 	}
 	paddr := urlMakeAddress(u)
-	var conn net.Conn
 	switch u.Scheme {
-	case "https":
-		conn, err = tls.Dial("tcp", paddr, nil)
-	case "http":
-		conn, err = net.DialTimeout("tcp", paddr, 10*time.Second)
+	case "https", "http":
+		return DialTunnelHTTP(u, paddr, addr)
 	case "socks5", "socks5h":
 		return DialTunnelSock5(u, paddr, addr)
 	case "ssh":
 		return DialTunnelSSH(u, paddr, addr, config)
 	default:
-		return nil, cli.ErrorCat("not support current scheme", u.Scheme)
+
 	}
-	if err != nil {
-		return nil, cli.ErrorCat("Counld't establish connection to proxy: ", err.Error())
-	}
-	var buf bytes.Buffer
-	buf.Grow(512)
-	ph, _ := splitHostPort(addr)
-	_, _ = buf.WriteString("CONNECT ")
-	_, _ = buf.WriteString(addr)
-	_, _ = buf.WriteString(" HTTP/1.1\nHost: ")
-	_, _ = buf.WriteString(ph) // Host information
-	_, _ = buf.WriteString("\nProxy-Connection: Keep-Alive\nContent-Length: 0\nUser-Agent:SSH/9.0\n")
-	if u.User != nil {
-		_, _ = buf.WriteString("\nProxy-Authorization: Basic ")
-		_, _ = buf.WriteString(basicAuth(u.User))
-	}
-	_, _ = buf.WriteString("\r\n\r\n")
-	if _, err := conn.Write(buf.Bytes()); err != nil {
-		conn.Close()
-		return nil, cli.ErrorCat("Counld't send CONNECT request to proxy: ", err.Error())
-	}
-	res, err := StateMachineCONNECT(conn)
-	if err != nil {
-		return nil, cli.ErrorCat("reading HTTP response from CONNECT to ", addr, " via proxy ", pu, " failed: ", err.Error())
-	}
-	// HTTP/1.1 200 Connection Established
-	// HTTP/1.1 407 Unauthorized
-	if res.StatusCode != 200 {
-		return nil, cli.ErrorCat("proxy error from ", pu, " while dialing ", addr, ":", res.Status)
-	}
-	return conn, nil
+	return nil, cli.ErrorCat("not support current scheme", u.Scheme)
 }
