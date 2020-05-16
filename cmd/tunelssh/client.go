@@ -25,9 +25,9 @@ func DialTunnel(p, network, addr string, config *ssh.ClientConfig) (*ssh.Client,
 
 // Dial todo
 func Dial(network, addr string, config *ssh.ClientConfig) (*ssh.Client, error) {
-	if p, err := ResolveProxy(); err == nil {
-		DebugPrint("resolve proxy config: %s", p)
-		return DialTunnel(p, network, addr, config)
+	if ps, err := ResolveProxy(); err == nil {
+		DebugPrint("resolve proxy config: %s", ps.ProxyServer)
+		return DialTunnel(ps.ProxyServer, network, addr, config)
 	}
 	return ssh.Dial(network, addr, config)
 }

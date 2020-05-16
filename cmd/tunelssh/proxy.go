@@ -7,6 +7,7 @@ import (
 	"errors"
 	"net"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 
@@ -21,13 +22,76 @@ var (
 	ErrProxyNotConfigured = errors.New("Proxy is not configured correctly")
 )
 
+// ProxySettings todo
+type ProxySettings struct {
+	ProxyServer   string
+	ProxyOverride string // aka no proxy
+	ipMatchers    []matcher
+
+	// domainMatchers represent all values in the NoProxy that are a domain
+	// name or hostname & domain name
+	domainMatchers []matcher
+	initialized    bool
+	sep            string
+}
+
+// UseProxy todo
+func (ps *ProxySettings) UseProxy(addr string) bool {
+	if !ps.initialized {
+		if err := ps.Initialize(); err != nil {
+			return true
+		}
+	}
+	if len(addr) == 0 {
+		return true
+	}
+	host, port, err := net.SplitHostPort(addr)
+	if err != nil {
+		return false
+	}
+	if host == "localhost" {
+		return false
+	}
+	ip := net.ParseIP(host)
+	if ip != nil {
+		if ip.IsLoopback() {
+			return false
+		}
+	}
+
+	addr = strings.ToLower(strings.TrimSpace(host))
+
+	if ip != nil {
+		for _, m := range ps.ipMatchers {
+			if m.match(addr, port, ip) {
+				return false
+			}
+		}
+	}
+	for _, m := range ps.domainMatchers {
+		if m.match(addr, port, ip) {
+			return false
+		}
+	}
+	return true
+}
+
+func getEnvAny(names ...string) string {
+	for _, n := range names {
+		if val := os.Getenv(n); val != "" {
+			return val
+		}
+	}
+	return ""
+}
+
 func schemePort(scheme string) string {
 	switch scheme {
 	case "http":
 		return "80"
 	case "https":
 		return "443"
-	case "socks5":
+	case "socks5", "socks5h":
 		return "1080"
 	case "ssh":
 		return "22"
@@ -101,7 +165,7 @@ func DailTunnelInternal(pu, addr string, config *ssh.ClientConfig) (net.Conn, er
 		conn, err = tls.Dial("tcp", paddr, nil)
 	case "http":
 		conn, err = net.DialTimeout("tcp", paddr, 10*time.Second)
-	case "socks5":
+	case "socks5", "socks5h":
 		return DialTunnelSock5(u, paddr, addr)
 	case "ssh":
 		return DialTunnelSSH(u, paddr, addr, config)

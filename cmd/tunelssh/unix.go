@@ -2,21 +2,21 @@
 
 package main
 
-import "os"
-
 // ResolveProxy todo
 func ResolveProxy() (string, error) {
-	if s := os.Getenv("SSH_PROXY"); len(s) > 0 {
-		return s, nil
+	ps := &ProxySettings{sep: ","}
+	ps.ProxyOverride = getEnvAny("NO_PROXY", "no_proxy")
+	if ps.ProxyServer = getEnvAny("SSH_PROXY", "ssh_proxy"); len(ps.ProxyServer) > 0 {
+		return ps, nil
 	}
-	if s := os.Getenv("HTTPS_PROXY"); len(s) > 0 {
-		return s, nil
+	if ps.ProxyServer = getEnvAny("HTTPS_PROXY", "https_proxy"); len(ps.ProxyServer) > 0 {
+		return ps, nil
 	}
-	if s := os.Getenv("HTTP_PROXY"); len(s) > 0 {
-		return s, nil
+	if ps.ProxyServer = getEnvAny("HTTP_PROXY", "http_proxy"); len(ps.ProxyServer) > 0 {
+		return ps, nil
 	}
-	if s := os.Getenv("ALL_PROXY"); len(s) > 0 {
-		return s, nil
+	if ps.ProxyServer = getEnvAny("ALL_PROXY", "all_proxy"); len(ps.ProxyServer) > 0 {
+		return ps, nil
 	}
-	return "", ErrProxyNotConfigured
+	return nil, ErrProxyNotConfigured
 }
