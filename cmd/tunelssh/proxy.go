@@ -1,14 +1,11 @@
 package main
 
 import (
-	"bufio"
 	"bytes"
 	"crypto/tls"
 	"encoding/base64"
 	"errors"
-	"fmt"
 	"net"
-	"net/http"
 	"net/url"
 	"os/user"
 	"strings"
@@ -159,24 +156,14 @@ func DailTunnelInternal(pu, addr string, config *ssh.ClientConfig) (net.Conn, er
 		conn.Close()
 		return nil, cli.ErrorCat("Counld't send CONNECT request to proxy: ", err.Error())
 	}
-	br := bufio.NewReader(conn)
-	res, err := http.ReadResponse(br, nil)
+	res, err := StateMachineCONNECT(conn)
 	if err != nil {
-		return nil, fmt.Errorf("reading HTTP response from CONNECT to %s via proxy %s failed: %v",
-			addr, pu, err)
+		return nil, cli.ErrorCat("reading HTTP response from CONNECT to ", addr, " via proxy ", pu, " failed: ", err.Error())
 	}
 	// HTTP/1.1 200 Connection Established
 	// HTTP/1.1 407 Unauthorized
 	if res.StatusCode != 200 {
-		return nil, fmt.Errorf("proxy error from %s while dialing %s: %v", pu, addr, res.Status)
-	}
-	// It's safe to discard the bufio.Reader here and return the
-	// original TCP conn directly because we only use this for
-	// TLS, and in TLS the client speaks first, so we know there's
-	// no unbuffered data. But we can double-check.
-	if br.Buffered() > 0 {
-		return nil, fmt.Errorf("unexpected %d bytes of buffered data from CONNECT proxy %q",
-			br.Buffered(), pu)
+		return nil, cli.ErrorCat("proxy error from ", pu, " while dialing ", addr, ":", res.Status)
 	}
 	return conn, nil
 }
