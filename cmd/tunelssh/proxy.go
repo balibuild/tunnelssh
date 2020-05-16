@@ -1,13 +1,18 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"crypto/tls"
 	"encoding/base64"
 	"errors"
+	"fmt"
 	"net"
+	"net/http"
 	"net/url"
+	"os/user"
 	"strings"
+	"time"
 
 	"github.com/balibuild/tunnelssh/cli"
 	"golang.org/x/crypto/ssh"
@@ -97,6 +102,17 @@ func DialTunnelSock5(u *url.URL, addr string) (net.Conn, error) {
 // DialTunnelSSH over ssh
 func DialTunnelSSH(u *url.URL, addr string, config *ssh.ClientConfig) (net.Conn, error) {
 	//conn,err:=ssh.Dial()
+	var name string
+	if u.User != nil {
+		name = u.User.Username()
+	} else {
+		current, err := user.Current()
+		if err != nil {
+			return nil, err
+		}
+		name = current.Name
+	}
+	DebugPrint("user %s", name)
 	return nil, nil
 }
 
@@ -116,7 +132,7 @@ func DailTunnelInternal(pu, addr string, config *ssh.ClientConfig) (net.Conn, er
 	case "https":
 		conn, err = tls.Dial("tcp", address, nil)
 	case "http":
-		conn, err = net.Dial("tcp", address)
+		conn, err = net.DialTimeout("tcp", address, 10*time.Second)
 	case "socks5":
 		return DialTunnelSock5(u, addr)
 	case "ssh":
@@ -141,9 +157,26 @@ func DailTunnelInternal(pu, addr string, config *ssh.ClientConfig) (net.Conn, er
 	_, _ = buf.WriteString("\r\n\r\n")
 	if _, err := conn.Write(buf.Bytes()); err != nil {
 		conn.Close()
-		return nil, err
+		return nil, cli.ErrorCat("Counld't send CONNECT request to proxy: ", err.Error())
+	}
+	br := bufio.NewReader(conn)
+	res, err := http.ReadResponse(br, nil)
+	if err != nil {
+		return nil, fmt.Errorf("reading HTTP response from CONNECT to %s via proxy %s failed: %v",
+			addr, pu, err)
 	}
 	// HTTP/1.1 200 Connection Established
 	// HTTP/1.1 407 Unauthorized
+	if res.StatusCode != 200 {
+		return nil, fmt.Errorf("proxy error from %s while dialing %s: %v", pu, addr, res.Status)
+	}
+	// It's safe to discard the bufio.Reader here and return the
+	// original TCP conn directly because we only use this for
+	// TLS, and in TLS the client speaks first, so we know there's
+	// no unbuffered data. But we can double-check.
+	if br.Buffered() > 0 {
+		return nil, fmt.Errorf("unexpected %d bytes of buffered data from CONNECT proxy %q",
+			br.Buffered(), pu)
+	}
 	return conn, nil
 }
