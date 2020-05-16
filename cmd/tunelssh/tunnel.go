@@ -3,39 +3,31 @@ package main
 import (
 	"net"
 	"net/url"
+	"os/user"
 	"time"
 
 	"golang.org/x/crypto/ssh"
 )
 
 type sshconn struct {
-	client  *ssh.Client
-	channel ssh.Channel
-	session *ssh.Session
+	client *ssh.Client
+	chcon  net.Conn
 }
 
 // Read reads data from the connection.
-// Read can be made to time out and return an Error with Timeout() == true
-// after a fixed time limit; see SetDeadline and SetReadDeadline.
 func (conn *sshconn) Read(b []byte) (int, error) {
-	return conn.channel.Read(b)
+	return conn.chcon.Read(b)
 }
 
-// Write writes data to the connection.
-// Write can be made to time out and return an Error with Timeout() == true
-// after a fixed time limit; see SetDeadline and SetWriteDeadline.
+// Write writes data
 func (conn *sshconn) Write(b []byte) (int, error) {
-	return conn.channel.Write(b)
+	return conn.chcon.Write(b)
 }
 
 // Close closes the connection.
-// Any blocked Read or Write operations will be unblocked and return errors.
 func (conn *sshconn) Close() error {
-	if conn.channel != nil {
-		conn.channel.Close()
-	}
-	if conn.session != nil {
-		conn.session.Close()
+	if conn.chcon != nil {
+		_ = conn.chcon.Close()
 	}
 	return conn.client.Close()
 }
@@ -50,50 +42,40 @@ func (conn *sshconn) RemoteAddr() net.Addr {
 	return conn.client.RemoteAddr()
 }
 
-// SetDeadline sets the read and write deadlines associated
-// with the connection. It is equivalent to calling both
-// SetReadDeadline and SetWriteDeadline.
-//
-// A deadline is an absolute time after which I/O operations
-// fail with a timeout (see type Error) instead of
-// blocking. The deadline applies to all future and pending
-// I/O, not just the immediately following call to Read or
-// Write. After a deadline has been exceeded, the connection
-// can be refreshed by setting a deadline in the future.
-//
-// An idle timeout can be implemented by repeatedly extending
-// the deadline after successful Read or Write calls.
-//
-// A zero value for t means I/O operations will not time out.
-//
-// Note that if a TCP connection has keep-alive turned on,
-// which is the default unless overridden by Dialer.KeepAlive
-// or ListenConfig.KeepAlive, then a keep-alive failure may
-// also return a timeout error. On Unix systems a keep-alive
-// failure on I/O can be detected using
-// errors.Is(err, syscall.ETIMEDOUT).
+// SetDeadline wapper
 func (conn *sshconn) SetDeadline(t time.Time) error {
-	return nil
+	return conn.chcon.SetDeadline(t)
 }
 
-// SetReadDeadline sets the deadline for future Read calls
-// and any currently-blocked Read call.
-// A zero value for t means Read will not time out.
+// SetReadDeadline wapper
 func (conn *sshconn) SetReadDeadline(t time.Time) error {
-	return nil
+	return conn.chcon.SetReadDeadline(t)
 }
 
-// SetWriteDeadline sets the deadline for future Write calls
-// and any currently-blocked Write call.
-// Even if write times out, it may return n > 0, indicating that
-// some of the data was successfully written.
-// A zero value for t means Write will not time out.
+// SetWriteDeadline wapper
 func (conn *sshconn) SetWriteDeadline(t time.Time) error {
-	return nil
+	return conn.chcon.SetWriteDeadline(t)
 }
 
-// DialTunnelInternalSSH todo
-func DialTunnelInternalSSH(u *url.URL, addr, user string, config *ssh.ClientConfig) (net.Conn, error) {
+// DialTunnelSSH todo
+func DialTunnelSSH(u *url.URL, paddr, addr string, config *ssh.ClientConfig) (net.Conn, error) {
 	conn := &sshconn{}
+	var err error
+	configcopy := *config
+	if u.User != nil {
+		configcopy.User = u.User.Username()
+	} else {
+		current, err := user.Current()
+		if err != nil {
+			return nil, err
+		}
+		configcopy.User = current.Name
+	}
+	if conn.client, err = ssh.Dial("tcp", paddr, &configcopy); err != nil {
+		return nil, err
+	}
+	if conn.chcon, err = conn.client.Dial("tcp", addr); err != nil {
+		return nil, err
+	}
 	return conn, nil
 }

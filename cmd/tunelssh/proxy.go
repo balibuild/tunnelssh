@@ -7,7 +7,6 @@ import (
 	"errors"
 	"net"
 	"net/url"
-	"os/user"
 	"strings"
 	"time"
 
@@ -75,7 +74,6 @@ func urlMakeAddress(u *url.URL) string {
 	if len(port) != 0 {
 		return host
 	}
-
 	if strings.IndexByte(host, ':') != -1 {
 		cli.StrCat("[", host, "]:", schemePort(u.Scheme))
 	}
@@ -93,23 +91,6 @@ func DialTunnelSock5(u *url.URL, paddr, addr string) (net.Conn, error) {
 	//proxy.SOCKS5()
 	//proxy.SOCKS5()
 	proxy.SOCKS5("tcp", addr, nil, nil)
-	return nil, nil
-}
-
-// DialTunnelSSH over ssh
-func DialTunnelSSH(u *url.URL, paddr, addr string, config *ssh.ClientConfig) (net.Conn, error) {
-	//conn,err:=ssh.Dial()
-	var name string
-	if u.User != nil {
-		name = u.User.Username()
-	} else {
-		current, err := user.Current()
-		if err != nil {
-			return nil, err
-		}
-		name = current.Name
-	}
-	DebugPrint("user %s", name)
 	return nil, nil
 }
 
