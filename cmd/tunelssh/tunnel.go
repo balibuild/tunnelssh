@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"os/user"
+	"strings"
 	"time"
 
 	"github.com/balibuild/tunnelssh/cli"
@@ -170,4 +171,26 @@ func DialTunnelHTTP(u *url.URL, paddr, addr string) (net.Conn, error) {
 		return nil, cli.ErrorCat("proxy error from ", paddr, " while dialing ", addr, ":", resp.Status)
 	}
 	return pc, nil
+}
+
+// DailTunnelInternal todo
+func DailTunnelInternal(pu, addr string, config *ssh.ClientConfig) (net.Conn, error) {
+	if strings.Index(pu, "://") == -1 {
+		pu = "http://" + pu // avoid proxy url parse failed
+	}
+	u, err := url.Parse(pu)
+	if err != nil {
+		return nil, err
+	}
+	paddr := urlMakeAddress(u)
+	switch u.Scheme {
+	case "https", "http":
+		return DialTunnelHTTP(u, paddr, addr)
+	case "socks5", "socks5h":
+		return DialTunnelSock5(u, paddr, addr)
+	case "ssh":
+		return DialTunnelSSH(u, paddr, addr, config)
+	default:
+	}
+	return nil, cli.ErrorCat("not support current scheme", u.Scheme)
 }

@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/balibuild/tunnelssh/cli"
-	"golang.org/x/crypto/ssh"
 )
 
 // SSH_PROXY
@@ -144,26 +143,4 @@ func basicAuth(ui *url.Userinfo) string {
 	passwd, _ := ui.Password()
 	auth := ui.Username() + ":" + passwd
 	return base64.StdEncoding.EncodeToString([]byte(auth))
-}
-
-// DailTunnelInternal todo
-func DailTunnelInternal(pu, addr string, config *ssh.ClientConfig) (net.Conn, error) {
-	if strings.Index(pu, "://") == -1 {
-		pu = "http://" + pu // avoid proxy url parse failed
-	}
-	u, err := url.Parse(pu)
-	if err != nil {
-		return nil, err
-	}
-	paddr := urlMakeAddress(u)
-	switch u.Scheme {
-	case "https", "http":
-		return DialTunnelHTTP(u, paddr, addr)
-	case "socks5", "socks5h":
-		return DialTunnelSock5(u, paddr, addr)
-	case "ssh":
-		return DialTunnelSSH(u, paddr, addr, config)
-	default:
-	}
-	return nil, cli.ErrorCat("not support current scheme", u.Scheme)
 }
