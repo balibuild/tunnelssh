@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/balibuild/tunnelssh/cli"
+	"golang.org/x/net/proxy"
 )
 
 // SSH_PROXY
@@ -88,6 +89,7 @@ func basicAuth(ui *url.Userinfo) string {
 func DialTunnelSock5(u *url.URL, addr string) (net.Conn, error) {
 	//proxy.SOCKS5()
 	//proxy.SOCKS5()
+	proxy.SOCKS5("tcp", addr, nil, nil)
 	return nil, nil
 }
 
@@ -100,7 +102,7 @@ func DialTunnelSSH(u *url.URL, addr string) (net.Conn, error) {
 // DailTunelInternal todo
 func DailTunelInternal(pu, addr string) (net.Conn, error) {
 	if strings.Index(pu, "://") == -1 {
-		proxy = "http://" + pu // avoid proxy url parse failed
+		pu = "http://" + pu // avoid proxy url parse failed
 	}
 	u, err := url.Parse(pu)
 	if err != nil {
