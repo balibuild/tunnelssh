@@ -1,0 +1,15 @@
+{
+    "name": "TunnelSSH",
+    "version": "1.0.0",
+    "files": [
+        {
+            "path": "LICENSE",
+            "destination": "share",
+            "norename": true
+        }
+    ],
+    "dirs": [
+        "cmd/tunnelssh",
+        "cmd/git-tunnel"
+    ]
+}
