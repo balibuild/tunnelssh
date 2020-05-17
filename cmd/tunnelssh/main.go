@@ -3,8 +3,12 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/user"
+	"strconv"
+	"strings"
 
 	"github.com/balibuild/tunnelssh/cli"
+	"golang.org/x/crypto/ssh"
 )
 
 // IsDebugMode todo
@@ -45,13 +49,43 @@ usage: %s <option> args ...
 func (c *client) Invoke(val int, oa, raw string) error {
 	switch val {
 	case 'h':
+		usage()
+		os.Exit(0)
 	case 'v':
+		version()
+		os.Exit(0)
 	case 'V':
+		IsDebugMode = true
 	case 'p':
+		p, err := strconv.Atoi(oa)
+		if err != nil {
+			return cli.ErrorCat("invaild port number: ", oa)
+		}
+		c.port = p
 	case 'T':
+		c.forcenotty = true
 	case 't':
+		c.forcetty = true
 	default:
 	}
+	return nil
+}
+
+// SplitHost todo
+// git@xxxx
+// xxxx
+func (c *client) SplitHost(sshaddr string) error {
+	if pos := strings.IndexByte(sshaddr, '@'); pos != -1 {
+		c.config.User = sshaddr[0:pos]
+		c.host = sshaddr[pos+1:]
+		return nil
+	}
+	c.host = sshaddr
+	u, err := user.Current()
+	if err != nil {
+		return err
+	}
+	c.config.User = u.Name
 	return nil
 }
 
@@ -66,6 +100,20 @@ func (c *client) ParseArgv() error {
 	if cli.IsTrue(os.Getenv("TUNNEL_DEBUG")) {
 		IsDebugMode = true
 	}
+	c.port = 0
+	if err := ae.Execute(os.Args, c); err != nil {
+		return err
+	}
+	if len(ae.Unresolved()) == 0 {
+		usage()
+		os.Exit(1)
+	}
+	c.config = &ssh.ClientConfig{}
+	if err := c.SplitHost(ae.Unresolved()[0]); err != nil {
+		return cli.ErrorCat("SplitHost: ", err.Error())
+	}
+	c.argv = ae.Unresolved()[1:]
+
 	return nil
 }
 

@@ -7,8 +7,13 @@ import (
 //
 
 type client struct {
-	ssh  *ssh.Client
-	argv []string
+	ssh        *ssh.Client
+	config     *ssh.ClientConfig
+	argv       []string // unresolved command argv
+	host       string
+	port       int
+	forcetty   bool
+	forcenotty bool
 }
 
 // DialTunnel todo
