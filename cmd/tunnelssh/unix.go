@@ -2,8 +2,15 @@
 
 package main
 
+import (
+	"net"
+	"os"
+
+	"github.com/balibuild/tunnelssh/cli"
+)
+
 // ResolveProxy todo
-func ResolveProxy() (string, error) {
+func ResolveProxy() (*ProxySettings, error) {
 	ps := &ProxySettings{sep: ","}
 	ps.ProxyOverride = getEnvAny("NO_PROXY", "no_proxy")
 	if ps.ProxyServer = getEnvAny("SSH_PROXY", "ssh_proxy"); len(ps.ProxyServer) > 0 {
@@ -19,4 +26,18 @@ func ResolveProxy() (string, error) {
 		return ps, nil
 	}
 	return nil, ErrProxyNotConfigured
+}
+
+// MakeAgent make agent
+func (ka *KeyAgent) MakeAgent() error {
+	sock := os.Getenv("SSH_AUTH_SOCK")
+	if len(sock) == 0 {
+		return cli.ErrorCat("ssh agent not initialized")
+	}
+	conn, err := net.Dial("unix", sock)
+	if err != nil {
+		return err
+	}
+	ka.conn = conn
+	return nil
 }

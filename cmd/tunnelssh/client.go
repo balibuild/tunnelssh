@@ -9,6 +9,7 @@ import (
 type client struct {
 	ssh        *ssh.Client
 	config     *ssh.ClientConfig
+	ka         *KeyAgent
 	argv       []string // unresolved command argv
 	host       string
 	port       int

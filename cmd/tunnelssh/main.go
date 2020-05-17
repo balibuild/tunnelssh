@@ -113,6 +113,13 @@ func (c *client) ParseArgv() error {
 		return cli.ErrorCat("SplitHost: ", err.Error())
 	}
 	c.argv = ae.Unresolved()[1:]
+	c.config.Auth = append(c.config.Auth, ssh.PasswordCallback(sshPasswordPrompt))
+	c.ka = &KeyAgent{}
+	if c.ka.MakeAgent() == nil {
+		c.config.Auth = append(c.config.Auth, c.ka.UseAgent())
+	} else {
+		c.config.Auth = append(c.config.Auth, ssh.PublicKeysCallback(c.PublicKeys))
+	}
 
 	return nil
 }

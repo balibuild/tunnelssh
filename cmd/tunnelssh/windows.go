@@ -5,6 +5,8 @@ package main
 import (
 	"os"
 
+	"github.com/balibuild/tunnelssh/cli"
+	"github.com/balibuild/winio"
 	"golang.org/x/sys/windows/registry"
 )
 
@@ -58,4 +60,20 @@ func ResolveProxy() (*ProxySettings, error) {
 		return ps, nil
 	}
 	return nil, ErrProxyNotConfigured
+}
+
+// MakeAgent make agent
+// Windows use pipe now
+// https://github.com/PowerShell/openssh-portable/blob/latestw_all/contrib/win32/win32compat/ssh-agent/agent.c#L40
+func (ka *KeyAgent) MakeAgent() error {
+	if len(os.Getenv("SSH_AUTH_SOCK")) == 0 {
+		return cli.ErrorCat("ssh agent not initialized")
+	}
+	// \\\\.\\pipe\\openssh-ssh-agent
+	conn, err := winio.DialPipe("\\\\.\\pipe\\openssh-ssh-agent", nil)
+	if err != nil {
+		return err
+	}
+	ka.conn = conn
+	return nil
 }
