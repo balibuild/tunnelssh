@@ -34,15 +34,13 @@ func readAskPass(prompt string, flags int) (string, error) {
 	defer in.Close()
 	br := bufio.NewReader(in)
 	cmd.Start()
-	for i := 0; i < 3; i++ {
-		ln, err := br.ReadString('\n')
-		if err != nil {
-			break
-		}
-		ln = strings.TrimSuffix(ln, "\r")
+	ln, err := br.ReadString('\n')
+	if err != nil {
+		return "", err
 	}
+	ln = strings.TrimSuffix(ln, "\r")
 	cmd.Wait()
-	return "", nil
+	return ln, nil
 }
 
 func askIsHostTrusted(host string, key ssh.PublicKey) bool {
