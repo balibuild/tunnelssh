@@ -214,7 +214,19 @@ func (c *client) ParseArgv() error {
 		usage()
 		os.Exit(1)
 	}
-	c.config = &ssh.ClientConfig{}
+	// not support dsa
+	//HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+	c.config = &ssh.ClientConfig{
+		HostKeyAlgorithms: []string{
+			ssh.KeyAlgoRSA,
+			ssh.KeyAlgoECDSA256,
+			ssh.KeyAlgoSKECDSA256,
+			ssh.KeyAlgoECDSA384,
+			ssh.KeyAlgoECDSA521,
+			ssh.KeyAlgoED25519,
+			ssh.KeyAlgoSKED25519,
+		},
+	}
 	if err := c.SplitHost(ae.Unresolved()[0]); err != nil {
 		return cli.ErrorCat("SplitHost: ", err.Error())
 	}
@@ -231,5 +243,8 @@ func (c *client) ParseArgv() error {
 }
 
 func main() {
-	//
+	c := &client{}
+	if err := c.ParseArgv(); err != nil {
+
+	}
 }

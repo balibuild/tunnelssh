@@ -9,6 +9,7 @@ import (
 type client struct {
 	ssh        *ssh.Client
 	config     *ssh.ClientConfig
+	sess       *ssh.Session
 	ka         *KeyAgent
 	argv       []string // unresolved command argv
 	env        map[string]string
@@ -39,4 +40,46 @@ func Dial(network, addr string, config *ssh.ClientConfig) (*ssh.Client, error) {
 	}
 	DebugPrint("no proxy env found direct dail: %s", addr)
 	return ssh.Dial(network, addr, config)
+}
+
+// SendEnv todo
+func (c *client) SendEnv() error {
+	if len(c.env) == 0 {
+		return nil
+	}
+	// sess, err := c.ssh.NewSession()
+	// if err != nil {
+	// 	return err
+	// }
+	// for k, v := range c.env {
+	// 	sess.Setenv(k, v)
+	// }
+	return nil
+}
+
+func (c *client) Shell() error {
+	if c.forcetty {
+		// Set up terminal modes
+		// https://net-ssh.github.io/net-ssh/classes/Net/SSH/Connection/Term.html
+		// https://www.ietf.org/rfc/rfc4254.txt
+		// https://godoc.org/golang.org/x/crypto/ssh
+		// THIS IS THE TITLE
+		// https://pythonhosted.org/ANSIColors-balises/ANSIColors.html
+		modes := ssh.TerminalModes{ssh.ECHO: 0, ssh.IGNCR: 1}
+		if err := c.sess.RequestPty("vt100", 90, 30, modes); err != nil {
+			return err
+		}
+	}
+	if err := c.sess.Shell(); err != nil {
+		return err
+	}
+	return c.sess.Wait()
+}
+
+// Loop todo
+func (c *client) Loop() error {
+	if len(c.argv) == 0 {
+		return c.Shell()
+	}
+	return nil
 }
