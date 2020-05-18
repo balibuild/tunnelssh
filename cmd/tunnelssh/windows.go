@@ -14,7 +14,7 @@ import (
 
 // ResolveRegistryProxy todo
 func ResolveRegistryProxy() (*ProxySettings, error) {
-	k, err := registry.OpenKey(registry.CURRENT_USER, `HKCU\Software\Microsoft\Windows\CurrentVersion\Internet Settings`, registry.QUERY_VALUE)
+	k, err := registry.OpenKey(registry.CURRENT_USER, `Software\Microsoft\Windows\CurrentVersion\Internet Settings`, registry.QUERY_VALUE)
 	if err != nil {
 		return nil, err
 	}
