@@ -46,6 +46,9 @@ usage: %s <option> args ...
 `, os.Args[0])
 }
 
+// https://github.com/git/git/blob/e870325ee8575d5c3d7afe0ba2c9be072c692b65/connect.c#L1113
+// SetEnv
+
 func (c *client) Invoke(val int, oa, raw string) error {
 	switch val {
 	case 'h':
