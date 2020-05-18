@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/balibuild/tunnelssh/cli"
+	"github.com/mattn/go-isatty"
 )
 
 // ResolveProxy todo
@@ -40,4 +41,9 @@ func (ka *KeyAgent) MakeAgent() error {
 	}
 	ka.conn = conn
 	return nil
+}
+
+// IsTerminal todo
+func IsTerminal(fd *os.File) bool {
+	return isatty.IsTerminal(fd.Fd())
 }

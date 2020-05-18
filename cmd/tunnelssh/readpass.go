@@ -1,6 +1,10 @@
 package main
 
-import "golang.org/x/crypto/ssh"
+import (
+	"os"
+
+	"golang.org/x/crypto/ssh"
+)
 
 // GIT_ASKPASS
 // SSH_ASKPASS
@@ -14,7 +18,9 @@ import "golang.org/x/crypto/ssh"
 // }
 
 func askIsHostTrusted(host string, key ssh.PublicKey) bool {
+	if IsTerminal(os.Stderr) {
 
+	}
 	return false
 }
 

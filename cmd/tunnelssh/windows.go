@@ -7,6 +7,7 @@ import (
 
 	"github.com/balibuild/tunnelssh/cli"
 	"github.com/balibuild/winio"
+	"github.com/mattn/go-isatty"
 	"golang.org/x/sys/windows/registry"
 )
 
@@ -76,4 +77,12 @@ func (ka *KeyAgent) MakeAgent() error {
 	}
 	ka.conn = conn
 	return nil
+}
+
+// Windows Terminaol WT_SESSION todo
+// Mintty TTY
+
+// IsTerminal todo
+func IsTerminal(fd *os.File) bool {
+	return isatty.IsTerminal(fd.Fd()) || isatty.IsCygwinTerminal(fd.Fd())
 }
