@@ -47,3 +47,9 @@ func (ka *KeyAgent) MakeAgent() error {
 func IsTerminal(fd *os.File) bool {
 	return isatty.IsTerminal(fd.Fd())
 }
+
+// ReadPassPhrase todo
+func ReadPassPhrase(prompt string, flags int) (string, error) {
+
+	return "", nil
+}

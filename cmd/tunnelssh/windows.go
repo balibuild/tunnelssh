@@ -86,3 +86,10 @@ func (ka *KeyAgent) MakeAgent() error {
 func IsTerminal(fd *os.File) bool {
 	return isatty.IsTerminal(fd.Fd()) || isatty.IsCygwinTerminal(fd.Fd())
 }
+
+// ReadPassPhrase todo
+// openssh-portable-8.1.0.0\contrib\win32\win32compat\msic.c
+func ReadPassPhrase(prompt string, flags int) (string, error) {
+
+	return "", nil
+}
