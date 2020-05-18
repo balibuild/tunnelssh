@@ -11,6 +11,7 @@ type client struct {
 	config     *ssh.ClientConfig
 	ka         *KeyAgent
 	argv       []string // unresolved command argv
+	env        map[string]string
 	host       string
 	port       int
 	forcetty   bool
