@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"os"
 
 	"golang.org/x/crypto/ssh"
@@ -17,13 +18,26 @@ import (
 // 	return ""
 // }
 
-func askIsHostTrusted(host string, key ssh.PublicKey) bool {
-	if IsTerminal(os.Stderr) {
+func readAskPass() error {
+	askpass := os.Getenv("SSH_ASKPASS")
+	if len(askpass) == 0 {
+		return errors.New("SSH_ASKPASS not set")
+	}
+	return nil
+}
 
+func askIsHostTrusted(host string, key ssh.PublicKey) bool {
+	if IsTerminal(os.Stdin) {
+		// read input
+		//
 	}
 	return false
 }
 
 func sshPasswordPrompt() (string, error) {
+	if IsTerminal(os.Stdin) {
+		// read input
+		//
+	}
 	return "", nil
 }
