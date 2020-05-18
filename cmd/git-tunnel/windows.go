@@ -35,28 +35,11 @@ func InitializeGW() (string, error) {
 
 // InitializeEnv todo
 func InitializeEnv() error {
-	exe, err := os.Executable()
-	if err != nil {
-		return err
-	}
-	exebin := filepath.Dir(exe)
-	if _, err = exec.LookPath("tunnelssh.exe"); err != nil {
-		tunnelssh := filepath.Join(exebin, "tunnelssh.exe")
-		if _, err := os.Stat(tunnelssh); err != nil {
-			return err
-		}
-	} else {
-		exebin = ""
-	}
 	var gitbin string
-	if _, err = exec.LookPath("git"); err != nil {
+	if _, err := exec.LookPath("git"); err != nil {
 		if gitbin, err = InitializeGW(); err != nil {
 			return cli.ErrorCat("git not installed: ", err.Error())
 		}
-	}
-	// avoid rebuild
-	if len(gitbin) == 0 && len(exebin) == 0 {
-		return nil
 	}
 	p := os.Getenv("PATH")
 	pv := strings.Split(p, ";")
@@ -70,7 +53,16 @@ func InitializeEnv() error {
 		}
 		pvv = append(pvv, filepath.Clean(s))
 	}
-	if len(exebin) != 0 {
+	exe, err := os.Executable()
+	if err != nil {
+		return err
+	}
+	exebin := filepath.Dir(exe)
+	if _, err = exec.LookPath("tunnelssh.exe"); err != nil {
+		tunnelssh := filepath.Join(exebin, "tunnelssh.exe")
+		if _, err := os.Stat(tunnelssh); err != nil {
+			return err
+		}
 		pvv = append(pvv, exebin)
 	}
 	os.Setenv("PATH", strings.Join(pvv, ";"))

@@ -7,24 +7,13 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"github.com/balibuild/tunnelssh/cli"
 )
 
 func InitializeEnv() error {
-	exe, err := os.Executable()
-	if err != nil {
-		return err
-	}
-	exebin := filepath.Dir(exe)
-	if _, err = exec.LookPath("tunnelssh"); err != nil {
-		tunnelssh := filepath.Join(exebin, "tunnelssh.exe")
-		if _, err := os.Stat(tunnelssh); err != nil {
-			return err
-		}
-	} else {
-		exebin = ""
-	}
-	if len(exebin) == 0 {
-		return nil
+	if _, err = exec.LookPath("git"); err != nil {
+		return cli.ErrorCat("git not installed: ", err.Error())
 	}
 	p := os.Getenv("PATH")
 	pv := strings.Split(p, ":")
@@ -35,10 +24,19 @@ func InitializeEnv() error {
 		}
 		pvv = append(pvv, filepath.Clean(s))
 	}
-	if len(exebin) != 0 {
+	exe, err := os.Executable()
+	if err != nil {
+		return err
+	}
+	exebin := filepath.Dir(exe)
+	if _, err = exec.LookPath("tunnelssh"); err != nil {
+		tunnelssh := filepath.Join(exebin, "tunnelssh.exe")
+		if _, err := os.Stat(tunnelssh); err != nil {
+			return err
+		}
 		pvv = append(pvv, exebin)
 	}
-	os.Setenv("PATH", strings.Join(pvv, ";"))
+	os.Setenv("PATH", strings.Join(pvv, ":"))
 	os.Setenv("GIT_SSH", "tunnelssh")
 	os.Setenv("GIT_SSH_VARIANT", "ssh")
 	return nil
