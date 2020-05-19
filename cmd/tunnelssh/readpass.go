@@ -87,5 +87,5 @@ func askIsHostTrusted(host string, key ssh.PublicKey) bool {
 }
 
 func sshPasswordPrompt() (string, error) {
-	return AskPassword("Please input password: ")
+	return AskPassword("Please input password")
 }
