@@ -6,7 +6,6 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"runtime"
 	"strings"
 
 	"golang.org/x/crypto/ssh"
@@ -17,13 +16,8 @@ import (
 // GIT_TERMINAL_PROMPT
 // git-gui--askpass
 
-// // ReadPassphrase todo
-// func ReadPassphrase(prompt string, flags int) string {
-
-// 	return ""
-// }
-
-func readPasswordLine(reader io.Reader) ([]byte, error) {
+// ReadInput todo
+func ReadInput(reader io.Reader, unix bool) ([]byte, error) {
 	var buf [1]byte
 	var ret []byte
 
@@ -36,12 +30,12 @@ func readPasswordLine(reader io.Reader) ([]byte, error) {
 					ret = ret[:len(ret)-1]
 				}
 			case '\n':
-				if runtime.GOOS != "windows" {
+				if unix {
 					return ret, nil
 				}
 				// otherwise ignore \n
 			case '\r':
-				if runtime.GOOS == "windows" {
+				if !unix {
 					return ret, nil
 				}
 				// otherwise ignore \r
@@ -93,11 +87,5 @@ func askIsHostTrusted(host string, key ssh.PublicKey) bool {
 }
 
 func sshPasswordPrompt() (string, error) {
-	if IsTerminal(os.Stdin) {
-		// read input
-		//
-		//terminal.ReadPassword(os.Stdin.Fd())
-	}
-	DebugPrint("stdin is not a tty")
-	return "", nil
+	return AskPassword("Please input password: ")
 }

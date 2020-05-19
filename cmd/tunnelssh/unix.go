@@ -3,11 +3,13 @@
 package main
 
 import (
+	"fmt"
 	"net"
 	"os"
 
 	"github.com/balibuild/tunnelssh/cli"
 	"github.com/mattn/go-isatty"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 // ResolveProxy todo
@@ -48,8 +50,28 @@ func IsTerminal(fd *os.File) bool {
 	return isatty.IsTerminal(fd.Fd())
 }
 
-// ReadPassPhrase todo
-func ReadPassPhrase(prompt string, flags int) (string, error) {
+//AskPassword ask password
+func AskPassword(prompt string) (string, error) {
+	if fd := int(os.Stdin.Fd()); terminal.IsTerminal(fd) {
+		fmt.Fprintf(os.Stderr, "%s: ", prompt)
+		pwd, err := terminal.ReadPassword(fd)
+		if err != nil {
+			return "", err
+		}
+		return string(pwd), nil
+	}
+	return "", nil
+}
 
+// AskPrompt todo
+func AskPrompt(prompt string) (string, error) {
+	if fd := int(os.Stdin.Fd()); terminal.IsTerminal(fd) {
+		fmt.Fprintf(os.Stderr, "%s: ", prompt)
+		respond, err := ReadInput(os.Stdin, true)
+		if err != nil {
+			return "", err
+		}
+		return string(respond), nil
+	}
 	return "", nil
 }

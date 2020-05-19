@@ -5,6 +5,8 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/exec"
+	"strings"
 
 	"github.com/balibuild/tunnelssh/cli"
 	"github.com/balibuild/winio"
@@ -91,13 +93,37 @@ func IsTerminal(fd *os.File) bool {
 
 // ReadPassPhrase todo
 // openssh-portable-8.1.0.0\contrib\win32\win32compat\msic.c
-func ReadPassPhrase(prompt string, flags int) (string, error) {
 
-	return "", nil
+// save_state=$(stty -g)
+//
+
+// enableEchoInput only support cygterminal
+func enableEchoInput() (string, error) {
+	cmd := exec.Command("stty", "-g")
+	cmd.Stdin = os.Stdin
+	buf, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", err
+	}
+	cmd2 := exec.Command("stty", "-echo")
+	cmd2.Stdin = os.Stdin
+	cmd2.Stderr = os.Stderr
+	if err := cmd2.Run(); err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(buf)), nil
 }
 
-//Askpass ask password
-func Askpass(prompt string, verify bool) (string, error) {
+// restoreInput only support cygterminal
+func restoreInput(state string) error {
+	cmd := exec.Command("stty", state)
+	cmd.Stdin = os.Stdin
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
+}
+
+//AskPassword ask password
+func AskPassword(prompt string) (string, error) {
 	if fd := int(os.Stdin.Fd()); terminal.IsTerminal(fd) {
 		fmt.Fprintf(os.Stderr, "%s: ", prompt)
 		pwd, err := terminal.ReadPassword(fd)
@@ -107,12 +133,38 @@ func Askpass(prompt string, verify bool) (string, error) {
 		return string(pwd), nil
 	}
 	if isatty.IsCygwinTerminal(os.Stdin.Fd()) {
+		state, err := enableEchoInput()
+		if err != nil {
+			return "", err
+		}
+		defer restoreInput(state)
 		fmt.Fprintf(os.Stderr, "%s: ", prompt)
-		pwd, err := readPasswordLine(os.Stdin)
+		pwd, err := ReadInput(os.Stdin, true)
 		if err != nil {
 			return "", err
 		}
 		return string(pwd), nil
+	}
+	return "", nil
+}
+
+// AskPrompt todo
+func AskPrompt(prompt string) (string, error) {
+	if fd := int(os.Stdin.Fd()); terminal.IsTerminal(fd) {
+		fmt.Fprintf(os.Stderr, "%s: ", prompt)
+		respond, err := ReadInput(os.Stdin, false)
+		if err != nil {
+			return "", err
+		}
+		return string(respond), nil
+	}
+	if isatty.IsCygwinTerminal(os.Stdin.Fd()) {
+		fmt.Fprintf(os.Stderr, "%s: ", prompt)
+		respond, err := ReadInput(os.Stdin, true)
+		if err != nil {
+			return "", err
+		}
+		return string(respond), nil
 	}
 	return "", nil
 }

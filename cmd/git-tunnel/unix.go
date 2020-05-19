@@ -12,7 +12,7 @@ import (
 )
 
 func InitializeEnv() error {
-	if _, err = exec.LookPath("git"); err != nil {
+	if _, err := exec.LookPath("git"); err != nil {
 		return cli.ErrorCat("git not installed: ", err.Error())
 	}
 	p := os.Getenv("PATH")
