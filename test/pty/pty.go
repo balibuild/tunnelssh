@@ -71,6 +71,27 @@ func ReadInput(reader io.Reader, unix bool) ([]byte, error) {
 	}
 }
 
+// AskPrompt todo
+func AskPrompt(prompt string) (string, error) {
+	if fd := int(os.Stdin.Fd()); terminal.IsTerminal(fd) {
+		fmt.Fprintf(os.Stderr, "%s: ", prompt)
+		respond, err := ReadInput(os.Stdin, false)
+		if err != nil {
+			return "", err
+		}
+		return string(respond), nil
+	}
+	if isatty.IsCygwinTerminal(os.Stdin.Fd()) {
+		fmt.Fprintf(os.Stderr, "%s: ", prompt)
+		respond, err := ReadInput(os.Stdin, true)
+		if err != nil {
+			return "", err
+		}
+		return string(respond), nil
+	}
+	return "", nil
+}
+
 func main() {
 	fd := int(os.Stdin.Fd())
 	xterm := os.Getenv("TERM")
@@ -97,5 +118,8 @@ func main() {
 			fmt.Fprintf(os.Stderr, "\npassword: %s\n", passwd)
 		}
 	}
-
+	yesno, err := AskPrompt("Please input yes/no")
+	if err == nil {
+		fmt.Fprintf(os.Stderr, "input: [%s]\n", yesno)
+	}
 }
