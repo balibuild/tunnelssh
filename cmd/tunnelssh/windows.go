@@ -3,11 +3,13 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/balibuild/tunnelssh/cli"
 	"github.com/balibuild/winio"
 	"github.com/mattn/go-isatty"
+	"golang.org/x/crypto/ssh/terminal"
 	"golang.org/x/sys/windows/registry"
 )
 
@@ -91,5 +93,26 @@ func IsTerminal(fd *os.File) bool {
 // openssh-portable-8.1.0.0\contrib\win32\win32compat\msic.c
 func ReadPassPhrase(prompt string, flags int) (string, error) {
 
+	return "", nil
+}
+
+//Askpass ask password
+func Askpass(prompt string, verify bool) (string, error) {
+	if fd := int(os.Stdin.Fd()); terminal.IsTerminal(fd) {
+		fmt.Fprintf(os.Stderr, "%s: ", prompt)
+		pwd, err := terminal.ReadPassword(fd)
+		if err != nil {
+			return "", err
+		}
+		return string(pwd), nil
+	}
+	if isatty.IsCygwinTerminal(os.Stdin.Fd()) {
+		fmt.Fprintf(os.Stderr, "%s: ", prompt)
+		pwd, err := readPasswordLine(os.Stdin)
+		if err != nil {
+			return "", err
+		}
+		return string(pwd), nil
+	}
 	return "", nil
 }
