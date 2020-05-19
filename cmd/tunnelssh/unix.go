@@ -60,7 +60,7 @@ func AskPassword(prompt string) (string, error) {
 		}
 		return string(pwd), nil
 	}
-	return "", nil
+	return readAskPass(prompt, AskEcho)
 }
 
 // AskPrompt todo
@@ -73,5 +73,5 @@ func AskPrompt(prompt string) (string, error) {
 		}
 		return string(respond), nil
 	}
-	return "", nil
+	return readAskPass(prompt, AskNone)
 }

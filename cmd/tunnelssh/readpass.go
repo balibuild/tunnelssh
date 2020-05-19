@@ -53,6 +53,12 @@ func ReadInput(reader io.Reader, unix bool) ([]byte, error) {
 	}
 }
 
+// Ask flags
+const (
+	AskNone = 0
+	AskEcho = 1
+)
+
 func readAskPass(prompt string, flags int) (string, error) {
 	askpass := os.Getenv("SSH_ASKPASS")
 	if len(askpass) == 0 {
@@ -68,7 +74,7 @@ func readAskPass(prompt string, flags int) (string, error) {
 	br := bufio.NewReader(in)
 	cmd.Start()
 	ln, err := br.ReadString('\n')
-	if err != nil {
+	if err != nil && err != io.EOF {
 		return "", err
 	}
 	ln = strings.TrimSuffix(ln, "\r")
