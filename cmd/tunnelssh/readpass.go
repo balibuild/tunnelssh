@@ -82,13 +82,13 @@ func readAskPass(prompt string, flags int) (string, error) {
 	return ln, nil
 }
 
-func askIsHostTrusted(host string, key ssh.PublicKey) bool {
-	if IsTerminal(os.Stdin) {
-		// read input
-		//
+// The authenticity of host 'github.com (140.82.113.4)' can't be established.
+// RSA key fingerprint is SHA256:nThbg6kXUpJWGl7E1IGOCspRomTxdCARLviKw6E5SY8.
+// Are you sure you want to continue connecting (yes/no/[fingerprint])
 
-	}
-	DebugPrint("stdin is not a tty")
+func askIsHostTrusted(host string, key ssh.PublicKey) bool {
+	fintgerprint := ssh.FingerprintSHA256(key)
+	DebugPrint("Fingerprint %s", fingerprint)
 	return false
 }
 
