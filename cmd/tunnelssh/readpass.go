@@ -88,7 +88,7 @@ func readAskPass(prompt string, flags int) (string, error) {
 
 func askIsHostTrusted(host string, key ssh.PublicKey) bool {
 	fintgerprint := ssh.FingerprintSHA256(key)
-	DebugPrint("Fingerprint %s", fingerprint)
+	DebugPrint("Fingerprint %s", fintgerprint)
 	return false
 }
 

@@ -24,7 +24,7 @@ func MessageBoxPlain(title, caption string) int {
 		NULL = 0
 		MBOK = 0
 	)
-	return MessageBox(NULL, caption, title, MB_OK)
+	return MessageBox(NULL, caption, title, MBOK)
 }
 
 // https://github.com/jeroen/askpass/blob/master/src/win32/win-askpass.c
