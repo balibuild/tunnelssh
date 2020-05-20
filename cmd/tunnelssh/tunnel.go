@@ -132,13 +132,14 @@ func (pc *proxyconn) SetWriteDeadline(t time.Time) error {
 }
 
 // DialTunnelHTTP todo
-func DialTunnelHTTP(u *url.URL, paddr, addr string) (net.Conn, error) {
+func DialTunnelHTTP(u *url.URL, paddr, addr string, config *ssh.ClientConfig) (net.Conn, error) {
 	var err error
 	var conn net.Conn
 	if u.Scheme == "https" {
-		conn, err = tls.Dial("tcp", paddr, nil)
+		d := &net.Dialer{Timeout: config.Timeout}
+		conn, err = tls.DialWithDialer(d, "tcp", paddr, nil)
 	} else {
-		conn, err = net.DialTimeout("tcp", paddr, 10*time.Second)
+		conn, err = net.DialTimeout("tcp", paddr, config.Timeout)
 	}
 	if err != nil {
 		return nil, cli.ErrorCat("Counld't establish connection to proxy: ", err.Error())
@@ -185,9 +186,9 @@ func DailTunnelInternal(pu, addr string, config *ssh.ClientConfig) (net.Conn, er
 	paddr := urlMakeAddress(u)
 	switch u.Scheme {
 	case "https", "http":
-		return DialTunnelHTTP(u, paddr, addr)
+		return DialTunnelHTTP(u, paddr, addr, config)
 	case "socks5", "socks5h":
-		return DialTunnelSock5(u, paddr, addr)
+		return DialTunnelSock5(u, paddr, addr, config)
 	case "ssh":
 		return DialTunnelSSH(u, paddr, addr, config)
 	default:

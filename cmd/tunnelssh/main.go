@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/user"
@@ -14,11 +15,23 @@ import (
 // IsDebugMode todo
 var IsDebugMode bool
 
+// DebugLevel todo
+var DebugLevel int
+
 // DebugPrint todo
 func DebugPrint(format string, a ...interface{}) {
-	if IsDebugMode {
+	if IsDebugMode || DebugLevel == 3 {
 		ss := fmt.Sprintf(format, a...)
-		_, _ = os.Stderr.WriteString(cli.StrCat("\x1b[33m* ", ss, "\x1b[0m\n"))
+		_, _ = os.Stderr.WriteString(cli.StrCat("debug3: \x1b[33m", ss, "\x1b[0m\n"))
+	}
+}
+
+// DebugPrintN todo
+func DebugPrintN(level int, format string, a ...interface{}) {
+	if level >= DebugLevel {
+		ss := fmt.Sprintf(format, a...)
+		ns := strconv.Itoa(level)
+		_, _ = os.Stderr.WriteString(cli.StrCat("debug", ns, ": \x1b[33m", ss, "\x1b[0m\n"))
 	}
 }
 
@@ -40,73 +53,7 @@ func version() {
 }
 
 // -o option
-// Can be used to give options in the format used in the configuration file. This is useful for specifying options for which there is no separate command-line flag. For full details of the options listed below, and their possible values, see ssh_config(5).
-
-// AddressFamily
-// BatchMode
-// BindAddress
-// ChallengeResponseAuthentication
-// CheckHostIP
-// Cipher
-// Ciphers
-// ClearAllForwardings
-// Compression
-// CompressionLevel
-// ConnectionAttempts
-// ConnectTimeout
-// ControlMaster
-// ControlPath
-// DynamicForward
-// EscapeChar
-// ExitOnForwardFailure
-// ForwardAgent
-// ForwardX11
-// ForwardX11Trusted
-// GatewayPorts
-// GlobalKnownHostsFile
-// GSSAPIAuthentication
-// GSSAPIDelegateCredentials
-// HashKnownHosts
-// Host'
-// HostbasedAuthentication
-// HostKeyAlgorithms
-// HostKeyAlias
-// HostName
-// IdentityFile
-// IdentitiesOnly
-// KbdInteractiveDevices
-// LocalCommand
-// LocalForward
-// LogLevel
-// MACs'
-// NoHostAuthenticationForLocalhost
-// NumberOfPasswordPrompts
-// PasswordAuthentication
-// PermitLocalCommand
-// Port'
-// PreferredAuthentications
-// Protocol
-// ProxyCommand
-// PubkeyAuthentication
-// RekeyLimit
-// RemoteForward
-// RhostsRSAAuthentication
-// RSAAuthentication
-// SendEnv
-// ServerAliveInterval
-// ServerAliveCountMax
-// SmartcardDevice
-// StrictHostKeyChecking
-// TCPKeepAlive
-// Tunnel
-// TunnelDevice
-// UsePrivilegedPort
-// User'
-// UserKnownHostsFile
-// VerifyHostKeyDNS
-// VisualHostKey
-// XAuthLocation
-
+// Can be used to give options in the format used in the configuration file.
 // -4' Forces ssh to use IPv4 addresses only.
 // -6' Forces ssh to use IPv6 addresses only.
 //-p port Port to connect to on the remote host. This can be specified on a per-host basis in the configuration file.
@@ -117,7 +64,7 @@ usage: %s <option> args ...
   -v|--version     Show version number and quit
   -V|--verbose     Make the operation more talkative
   -p|--port        Port to connect to on the remote host.
-  -o|--option      Only SetEnv is supported
+  -o|--option      Partially compatible with SSH: SetEnv, ServerAliveInterval, ConnectTimeout
   -T               Disable pseudo-tty allocation.
   -t               Force pseudo-tty allocation.
   -4               Forces ssh to use IPv4 addresses only.
@@ -137,6 +84,20 @@ func (c *client) ParseOption(option string) bool {
 		key := strings.TrimPrefix(option, "SendEnv=")
 		val := os.Getenv(key)
 		c.env[key] = val
+		return true
+	}
+	if strings.HasPrefix(option, "ServerAliveInterval=") {
+		sai := strings.TrimPrefix(option, "ServerAliveInterval=")
+		if i, err := strconv.Atoi(sai); err == nil {
+			c.serverAliveInterval = i
+		}
+		return true
+	}
+	if strings.HasPrefix(option, "ConnectTimeout=") {
+		cti := strings.TrimPrefix(option, "ConnectTimeout=")
+		if i, err := strconv.Atoi(cti); err == nil {
+			c.serverAliveInterval = i
+		}
 		return true
 	}
 	return true
@@ -163,11 +124,27 @@ func (c *client) Invoke(val int, oa, raw string) error {
 			return cli.ErrorCat("option not support '", oa, "'")
 		}
 	case 'T':
-		c.forcenotty = true
+		c.mode = TerminalModeNone
+		switch oa {
+		case "v":
+			DebugLevel = 1
+		case "vv":
+			DebugLevel = 2
+		case "vvv":
+			DebugLevel = 3
+		}
 	case 't':
-		c.forcetty = true
+		c.mode = TerminalModeForce
 	case '4':
+		if c.v6 {
+			return errors.New("-4 (IPv4 only) /-6 (IPv6 only) cannot be set at the same time")
+		}
+		c.v4 = true
 	case '6':
+		if c.v4 {
+			return errors.New("-4 (IPv4 only) /-6 (IPv6 only) cannot be set at the same time")
+		}
+		c.v6 = true
 	default:
 	}
 	return nil
@@ -183,15 +160,31 @@ func (c *client) SplitHost(sshaddr string) error {
 		return nil
 	}
 	c.host = sshaddr
-	u, err := user.Current()
-	if err != nil {
-		return err
+	if len(c.config.User) == 0 {
+		u, err := user.Current()
+		if err != nil {
+			return err
+		}
+		c.config.User = u.Name
 	}
-	c.config.User = u.Name
 	return nil
 }
 
 func (c *client) ParseArgv() error {
+	// not support dsa
+	//HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+	c.config = &ssh.ClientConfig{
+		HostKeyAlgorithms: []string{
+			ssh.KeyAlgoRSA,
+			ssh.KeyAlgoECDSA256,
+			ssh.KeyAlgoSKECDSA256,
+			ssh.KeyAlgoECDSA384,
+			ssh.KeyAlgoECDSA521,
+			ssh.KeyAlgoED25519,
+			ssh.KeyAlgoSKED25519,
+		},
+		HostKeyCallback: c.HostKeyCallback,
+	}
 	c.env = make(map[string]string)
 	var ae cli.ArgvParser
 	ae.Add("help", cli.NOARG, 'h')
@@ -206,7 +199,7 @@ func (c *client) ParseArgv() error {
 	if cli.IsTrue(os.Getenv("TUNNEL_DEBUG")) {
 		IsDebugMode = true
 	}
-	c.port = 0
+	c.port = 22
 	if err := ae.Execute(os.Args, c); err != nil {
 		return err
 	}
@@ -214,19 +207,7 @@ func (c *client) ParseArgv() error {
 		usage()
 		os.Exit(1)
 	}
-	// not support dsa
-	//HostKeyCallback: ssh.InsecureIgnoreHostKey(),
-	c.config = &ssh.ClientConfig{
-		HostKeyAlgorithms: []string{
-			ssh.KeyAlgoRSA,
-			ssh.KeyAlgoECDSA256,
-			ssh.KeyAlgoSKECDSA256,
-			ssh.KeyAlgoECDSA384,
-			ssh.KeyAlgoECDSA521,
-			ssh.KeyAlgoED25519,
-			ssh.KeyAlgoSKED25519,
-		},
-	}
+
 	if err := c.SplitHost(ae.Unresolved()[0]); err != nil {
 		return cli.ErrorCat("SplitHost: ", err.Error())
 	}
@@ -238,13 +219,22 @@ func (c *client) ParseArgv() error {
 	} else {
 		c.config.Auth = append(c.config.Auth, ssh.PublicKeysCallback(c.PublicKeys))
 	}
-
 	return nil
 }
 
 func main() {
 	c := &client{}
 	if err := c.ParseArgv(); err != nil {
-
+		fmt.Fprintf(os.Stderr, "ParseArgv: %s\n", err)
+		os.Exit(1)
+	}
+	if err := c.Dial(); err != nil {
+		fmt.Fprintf(os.Stderr, "Dial %s: %s\n", c.host, err)
+		os.Exit(1)
+	}
+	defer c.Close()
+	if err := c.Loop(); err != nil {
+		fmt.Fprintf(os.Stderr, "Loop %s: %s\n", c.host, err)
+		os.Exit(1)
 	}
 }

@@ -1,23 +1,15 @@
 package main
 
 import (
+	"net"
+	"os"
+	"strconv"
+	"time"
+
 	"golang.org/x/crypto/ssh"
 )
 
 //
-
-type client struct {
-	ssh        *ssh.Client
-	config     *ssh.ClientConfig
-	sess       *ssh.Session
-	ka         *KeyAgent
-	argv       []string // unresolved command argv
-	env        map[string]string
-	host       string
-	port       int
-	forcetty   bool
-	forcenotty bool
-}
 
 // DialTunnel todo
 func DialTunnel(p, network, addr string, config *ssh.ClientConfig) (*ssh.Client, error) {
@@ -42,23 +34,35 @@ func Dial(network, addr string, config *ssh.ClientConfig) (*ssh.Client, error) {
 	return ssh.Dial(network, addr, config)
 }
 
+type client struct {
+	ssh                 *ssh.Client
+	config              *ssh.ClientConfig
+	sess                *ssh.Session
+	ka                  *KeyAgent
+	argv                []string // unresolved command argv
+	env                 map[string]string
+	host                string
+	port                int
+	mode                TerminalMode
+	v4                  bool
+	v6                  bool
+	serverAliveInterval int
+	connectTimeout      int
+}
+
 // SendEnv todo
 func (c *client) SendEnv() error {
 	if len(c.env) == 0 {
 		return nil
 	}
-	// sess, err := c.ssh.NewSession()
-	// if err != nil {
-	// 	return err
-	// }
-	// for k, v := range c.env {
-	// 	sess.Setenv(k, v)
-	// }
+	for k, v := range c.env {
+		c.sess.Setenv(k, v)
+	}
 	return nil
 }
 
 func (c *client) Shell() error {
-	if c.forcetty {
+	if c.mode == TerminalModeForce {
 		// Set up terminal modes
 		// https://net-ssh.github.io/net-ssh/classes/Net/SSH/Connection/Term.html
 		// https://www.ietf.org/rfc/rfc4254.txt
@@ -80,6 +84,40 @@ func (c *client) Shell() error {
 func (c *client) Loop() error {
 	if len(c.argv) == 0 {
 		return c.Shell()
+	}
+	return nil
+}
+
+// Dial todo
+func (c *client) Dial() error {
+	if c.connectTimeout != 0 {
+		c.config.Timeout = time.Duration(c.connectTimeout) * time.Second
+	} else {
+		c.config.Timeout = 5 * time.Second
+	}
+	addr := net.JoinHostPort(c.host, strconv.Itoa(c.port))
+	conn, err := Dial("tcp", addr, c.config)
+	if err != nil {
+		return err
+	}
+	c.ssh = conn
+	sess, err := c.ssh.NewSession()
+	if err != nil {
+		return err
+	}
+	c.sess = sess
+	c.sess.Stdin = os.Stdin
+	c.sess.Stderr = os.Stderr
+	c.sess.Stdout = os.Stdout
+	return nil
+}
+
+func (c *client) Close() error {
+	if c.sess != nil {
+		c.sess.Close()
+	}
+	if c.ssh != nil {
+		return c.ssh.Close()
 	}
 	return nil
 }

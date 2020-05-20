@@ -168,3 +168,14 @@ func AskPrompt(prompt string) (string, error) {
 	}
 	return readAskPass(prompt, AskNone)
 }
+
+// DefaultKnownHosts todo
+func DefaultKnownHosts() string {
+	return os.ExpandEnv("$USERPROFILE\\.ssh\\known_hosts")
+}
+
+// Initialize todo
+func (ks *KeySearcher) Initialize() error {
+	ks.home = os.ExpandEnv("$USERPROFILE")
+	return nil
+}
