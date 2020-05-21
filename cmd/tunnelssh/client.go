@@ -222,6 +222,9 @@ func (c *client) Close() error {
 	if c.sess != nil {
 		c.sess.Close()
 	}
+	if c.ka != nil {
+		c.ka.Close()
+	}
 	if c.ssh != nil {
 		return c.ssh.Close()
 	}

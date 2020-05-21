@@ -97,6 +97,16 @@ func IsTerminal(fd *os.File) bool {
 // save_state=$(stty -g)
 //
 
+// http://man7.org/linux/man-pages/man1/stty.1.html
+
+// \Device\NamedPipe\msys-1888ae32e00d56aa-pty0-echoloop
+// Cygwin uses special named pipes to simulate TTY, and Mintty listens to these obvious
+// pipes to control the terminal emulator, adjust its size, mode, and so on.
+//
+// If we parse these pipelines to control Mintty, this is a little more complicated.
+// In short, we can use stty to complete this work.
+// https://github.com/git/git/blob/master/compat/terminal.c#L90
+
 // enableEchoInput only support cygterminal
 func enableEchoInput() (string, error) {
 	cmd := exec.Command("stty", "-g")
