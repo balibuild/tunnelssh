@@ -5,33 +5,45 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"strings"
 
 	"github.com/mattn/go-isatty"
 	"golang.org/x/crypto/ssh/terminal"
+	"golang.org/x/sys/windows"
 )
 
-func enableEchoInput() (string, error) {
-	cmd := exec.Command("stty", "-g")
-	cmd.Stdin = os.Stdin
-	buf, err := cmd.CombinedOutput()
-	if err != nil {
-		return "", err
-	}
-	cmd2 := exec.Command("stty", "-echo")
-	cmd2.Stdin = os.Stdin
-	cmd2.Stderr = os.Stderr
-	if err := cmd2.Run(); err != nil {
-		return "", err
-	}
-	return strings.TrimSpace(string(buf)), nil
+type cygwinIoctl struct {
+	argv []string
 }
 
-func restoreInput(state string) error {
-	cmd := exec.Command("stty", state)
+// windows.ENABLE_ECHO_INPUT | windows.ENABLE_LINE_INPUT
+func (ci *cygwinIoctl) Disable(flags int) bool {
+	cmd := exec.Command("stty")
 	cmd.Stdin = os.Stdin
-	cmd.Stderr = os.Stderr
-	return cmd.Run()
+	if flags&windows.ENABLE_LINE_INPUT != 0 {
+		ci.argv = append(ci.argv, "icanon")
+		cmd.Args = append(cmd.Args, "-icanon")
+	}
+	if flags&windows.ENABLE_ECHO_INPUT != 0 {
+		ci.argv = append(ci.argv, "echo")
+		cmd.Args = append(cmd.Args, "-echo")
+	}
+	if flags&windows.ENABLE_PROCESSED_INPUT != 0 {
+		ci.argv = append(ci.argv, "-ignbrk", "intr", "^c")
+		cmd.Args = append(cmd.Args, "ignbrk", "intr", "")
+	}
+	if err := cmd.Run(); err != nil {
+		fmt.Fprintf(os.Stderr, "error %v", err)
+		return false
+	}
+	return true
+}
+
+func (ci *cygwinIoctl) Restore() {
+	cmd := exec.Command("stty", ci.argv...)
+	cmd.Stdin = os.Stdin
+	if err := cmd.Run(); err != nil {
+		fmt.Fprintf(os.Stderr, "restore %v", err)
+	}
 }
 
 // ReadInput todo
@@ -92,19 +104,14 @@ func AskPrompt(prompt string) (string, error) {
 	return "", nil
 }
 
-func main() {
-	fd := int(os.Stdin.Fd())
-	xterm := os.Getenv("TERM")
-	fmt.Fprintf(os.Stderr, "IsTerminal: %v %s\n", terminal.IsTerminal(fd), xterm)
+func askPassword() {
 	if isatty.IsCygwinTerminal(os.Stdin.Fd()) {
-		fmt.Fprintf(os.Stderr, "IsCygwinTerminal true\n")
-		state, err := enableEchoInput()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "sttyState error %v\n", err)
-			return
+		var ci cygwinIoctl
+		if !ci.Disable(windows.ENABLE_ECHO_INPUT | windows.ENABLE_LINE_INPUT) {
+			fmt.Fprintf(os.Stderr, "unable create echo mode")
+			os.Exit(1)
 		}
-		defer restoreInput(state)
-		fmt.Fprintf(os.Stderr, "sttyState  %s\n", state)
+		defer ci.Restore()
 		fmt.Fprintf(os.Stderr, "Please input password: ")
 		passwd, err := ReadInput(os.Stdin, true)
 		if err == nil {
@@ -118,6 +125,13 @@ func main() {
 			fmt.Fprintf(os.Stderr, "\npassword: %s\n", passwd)
 		}
 	}
+}
+
+func main() {
+	fd := int(os.Stdin.Fd())
+	xterm := os.Getenv("TERM")
+	fmt.Fprintf(os.Stderr, "IsTerminal: %v %s\n", terminal.IsTerminal(fd), xterm)
+	askPassword()
 	yesno, err := AskPrompt("Please input yes/no")
 	if err == nil {
 		fmt.Fprintf(os.Stderr, "input: [%s]\n", yesno)

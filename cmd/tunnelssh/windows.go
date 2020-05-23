@@ -3,15 +3,16 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
-	"strings"
 
 	"github.com/balibuild/tunnelssh/cli"
 	"github.com/balibuild/winio"
 	"github.com/mattn/go-isatty"
 	"golang.org/x/crypto/ssh/terminal"
+	"golang.org/x/sys/windows"
 	"golang.org/x/sys/windows/registry"
 )
 
@@ -107,29 +108,40 @@ func IsTerminal(fd *os.File) bool {
 // In short, we can use stty to complete this work.
 // https://github.com/git/git/blob/master/compat/terminal.c#L90
 
-// enableEchoInput only support cygterminal
-func enableEchoInput() (string, error) {
-	cmd := exec.Command("stty", "-g")
-	cmd.Stdin = os.Stdin
-	buf, err := cmd.CombinedOutput()
-	if err != nil {
-		return "", err
-	}
-	cmd2 := exec.Command("stty", "-echo")
-	cmd2.Stdin = os.Stdin
-	cmd2.Stderr = os.Stderr
-	if err := cmd2.Run(); err != nil {
-		return "", err
-	}
-	return strings.TrimSpace(string(buf)), nil
+// golang
+
+type cygwinIoctl struct {
+	argv []string
 }
 
-// restoreInput only support cygterminal
-func restoreInput(state string) error {
-	cmd := exec.Command("stty", state)
+// windows.ENABLE_ECHO_INPUT | windows.ENABLE_LINE_INPUT
+func (ci *cygwinIoctl) Disable(flags int) bool {
+	cmd := exec.Command("stty")
 	cmd.Stdin = os.Stdin
-	cmd.Stderr = os.Stderr
-	return cmd.Run()
+	if flags&windows.ENABLE_LINE_INPUT != 0 {
+		ci.argv = append(ci.argv, "icanon")
+		cmd.Args = append(cmd.Args, "-icanon")
+	}
+	if flags&windows.ENABLE_ECHO_INPUT != 0 {
+		ci.argv = append(ci.argv, "echo")
+		cmd.Args = append(cmd.Args, "-echo")
+	}
+	if flags&windows.ENABLE_PROCESSED_INPUT != 0 {
+		ci.argv = append(ci.argv, "-ignbrk", "intr", "^c")
+		cmd.Args = append(cmd.Args, "ignbrk", "intr", "")
+	}
+	if err := cmd.Run(); err != nil {
+		return false
+	}
+	return true
+}
+
+func (ci *cygwinIoctl) Restore() {
+	cmd := exec.Command("stty", ci.argv...)
+	cmd.Stdin = os.Stdin
+	if err := cmd.Run(); err != nil {
+		DebugPrint("restore %v", err)
+	}
 }
 
 //AskPassword ask password
@@ -143,11 +155,11 @@ func AskPassword(prompt string) (string, error) {
 		return string(pwd), nil
 	}
 	if isatty.IsCygwinTerminal(os.Stdin.Fd()) {
-		state, err := enableEchoInput()
-		if err != nil {
-			return "", err
+		var ci cygwinIoctl
+		if !ci.Disable(windows.ENABLE_ECHO_INPUT | windows.ENABLE_LINE_INPUT) {
+			return "", errors.New("unable set echo mode")
 		}
-		defer restoreInput(state)
+		defer ci.Restore()
 		fmt.Fprintf(os.Stderr, "%s: ", prompt)
 		pwd, err := ReadInput(os.Stdin, true)
 		if err != nil {
