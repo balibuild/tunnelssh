@@ -213,7 +213,7 @@ func (c *client) ParseArgv() error {
 	}
 	c.argv = ae.Unresolved()[1:]
 	c.config.Auth = append(c.config.Auth, ssh.PasswordCallback(func() (secret string, err error) {
-		return AskPassword("Please Input password: ")
+		return AskPassword("Password")
 	}))
 	c.ka = &KeyAgent{}
 	if c.ka.MakeAgent() == nil {
