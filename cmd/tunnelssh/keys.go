@@ -99,7 +99,7 @@ func (ks *KeySearcher) Search(name string) (ssh.Signer, error) {
 	file := filepath.Join(ks.home, ".ssh", name)
 	fd, err := os.Open(file)
 	if err != nil {
-		DebugPrint("%s %v", file, err)
+		DebugPrint("%v", err)
 		return nil, err
 	}
 	defer fd.Close()

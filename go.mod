@@ -4,6 +4,7 @@ go 1.14
 
 require (
 	github.com/balibuild/winio v0.5.1
+	github.com/gdamore/tcell v1.3.0
 	github.com/mattn/go-isatty v0.0.12
 	golang.org/x/crypto v0.0.0-20200510223506-06a226fb4e37
 	golang.org/x/net v0.0.0-20200513185701-a91f0712d120

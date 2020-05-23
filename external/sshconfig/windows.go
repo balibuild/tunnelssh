@@ -10,3 +10,7 @@ import (
 func systemConfigFinder() string {
 	return os.ExpandEnv("$ProgramData\\ssh\\ssh_config")
 }
+
+func systemdir() string {
+	return os.ExpandEnv("$ProgramData\\ssh")
+}

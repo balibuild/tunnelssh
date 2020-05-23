@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 
+	"github.com/balibuild/tunnelssh/pty"
 	"github.com/mattn/go-isatty"
 	"golang.org/x/crypto/ssh/terminal"
 	"golang.org/x/sys/windows"
@@ -136,4 +137,9 @@ func main() {
 	if err == nil {
 		fmt.Fprintf(os.Stderr, "input: [%s]\n", yesno)
 	}
+	x, y, err := pty.GetWinSize()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "GetWinSize: %v\n", err)
+	}
+	fmt.Fprintf(os.Stderr, "WinSize: %d %d\n", x, y)
 }

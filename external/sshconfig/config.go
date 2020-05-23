@@ -561,7 +561,7 @@ func NewInclude(directives []string, hasEquals bool, pos Position, comment strin
 		if filepath.IsAbs(directives[i]) {
 			path = directives[i]
 		} else if system {
-			path = filepath.Join("/etc/ssh", directives[i])
+			path = filepath.Join(systemdir(), directives[i])
 		} else {
 			path = filepath.Join(homedir(), ".ssh", directives[i])
 		}
