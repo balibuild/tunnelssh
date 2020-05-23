@@ -35,6 +35,7 @@ func (c *client) SendEnv() error {
 		return nil
 	}
 	for k, v := range c.env {
+		DebugPrint("SetEnv %s=%s", k, v)
 		c.sess.Setenv(k, v)
 	}
 	return nil
@@ -59,6 +60,7 @@ func (c *client) Shell() error {
 
 // Loop todo
 func (c *client) Loop() error {
+	_ = c.SendEnv()
 	c.sess.Stdout = os.Stdout
 	c.sess.Stderr = os.Stderr
 	c.sess.Stdin = os.Stdin
