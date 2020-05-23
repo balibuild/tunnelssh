@@ -43,7 +43,7 @@ func (c *client) SendEnv() error {
 }
 
 func (c *client) Shell() error {
-	DebugPrint("ssh mode %s", c.host)
+	DebugPrint("ssh shell mode. host: %s", c.host)
 	c.sess.Stdout = os.Stdout
 	c.sess.Stderr = os.Stderr
 	c.sess.Stdin = os.Stdin
@@ -83,10 +83,7 @@ func (c *client) Loop() error {
 	// git escape argv done
 	args := strings.Join(c.argv, " ")
 	DebugPrint("cmd: %s", args)
-	if err := c.sess.Run(args); err != nil {
-		return err
-	}
-	return c.sess.Wait()
+	return c.sess.Run(args)
 }
 
 // Dial todo
