@@ -136,3 +136,11 @@ func ReadInputEx(fd *os.File) ([]byte, error) {
 	}
 	return ReadInput(fd, true)
 }
+
+// MakeRaw todo
+func MakeRaw(fd *os.File) (*terminal.State, error) {
+	if isatty.IsTerminal(fd.Fd()) {
+		return terminal.MakeRaw(int(fd.Fd()))
+	}
+	return nil, errors.New("unsupport raw mode")
+}

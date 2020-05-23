@@ -10,6 +10,7 @@ import (
 	ssh_config "github.com/balibuild/tunnelssh/external/sshconfig"
 	"github.com/balibuild/tunnelssh/pty"
 	"golang.org/x/crypto/ssh"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 type client struct {
@@ -42,12 +43,24 @@ func (c *client) SendEnv() error {
 }
 
 func (c *client) Shell() error {
+	DebugPrint("ssh mode %s", c.host)
+	c.sess.Stdout = os.Stdout
+	c.sess.Stderr = os.Stderr
+	c.sess.Stdin = os.Stdin
 	if c.mode == TerminalModeForce {
 		x, y, err := pty.GetWinSize()
 		if err != nil {
 			return err
 		}
-		modes := ssh.TerminalModes{ssh.ECHO: 0, ssh.IGNCR: 1}
+		if termstate, err := terminal.MakeRaw(int(os.Stdin.Fd())); err == nil {
+			defer terminal.Restore(int(os.Stdin.Fd()), termstate)
+		}
+		modes := ssh.TerminalModes{
+			ssh.ECHO:          0,
+			ssh.IGNCR:         1,
+			ssh.TTY_OP_ISPEED: 115200, // baud in
+			ssh.TTY_OP_OSPEED: 115200, // baud out
+		}
 		if err := c.sess.RequestPty("xterm", y, x, modes); err != nil {
 			return err
 		}
@@ -61,13 +74,12 @@ func (c *client) Shell() error {
 // Loop todo
 func (c *client) Loop() error {
 	_ = c.SendEnv()
+	if len(c.argv) == 0 {
+		return c.Shell()
+	}
 	c.sess.Stdout = os.Stdout
 	c.sess.Stderr = os.Stderr
 	c.sess.Stdin = os.Stdin
-	if len(c.argv) == 0 {
-		DebugPrint("ssh mode %s", c.host)
-		return c.Shell()
-	}
 	// git escape argv done
 	args := strings.Join(c.argv, " ")
 	DebugPrint("cmd: %s", args)

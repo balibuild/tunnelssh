@@ -3,6 +3,7 @@
 package pty
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
@@ -25,6 +26,7 @@ func IsTerminal(fd *os.File) bool {
 	return isatty.IsTerminal(fd.Fd())
 }
 
+// ReadPassword todo
 func ReadPassword(prompt string) (string, error) {
 	fmt.Fprintf(os.Stderr, "%s: ", prompt)
 	pwd, err := terminal.ReadPassword(int(os.Stdin.Fd()))
@@ -32,6 +34,14 @@ func ReadPassword(prompt string) (string, error) {
 		return "", err
 	}
 	return string(pwd), nil
+}
+
+// MakeRaw todo
+func MakeRaw(fd *os.File) (*terminal.State, error) {
+	if isatty.IsTerminal(fd) {
+		return terminal.MakeRaw(int(fd.Fd()))
+	}
+	return nil, errors.New("not terminal")
 }
 
 // ReadInputEx todo
