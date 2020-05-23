@@ -128,3 +128,11 @@ func ReadPassword(prompt string) (string, error) {
 	}
 	return string(pwd), nil
 }
+
+// ReadInputEx todo
+func ReadInputEx(fd *os.File) ([]byte, error) {
+	if isatty.IsTerminal(fd.Fd()) {
+		return ReadInput(fd, false)
+	}
+	return ReadInput(fd, true)
+}

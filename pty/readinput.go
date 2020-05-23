@@ -1,6 +1,8 @@
 package pty
 
-import "io"
+import (
+	"io"
+)
 
 // ReadInput todo
 func ReadInput(reader io.Reader, unix bool) ([]byte, error) {

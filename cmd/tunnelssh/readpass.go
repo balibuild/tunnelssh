@@ -30,7 +30,7 @@ const (
 func AskPrompt(prompt string) (string, error) {
 	if pty.IsTerminal(os.Stdin) {
 		fmt.Fprintf(os.Stderr, "%s: ", prompt)
-		respond, err := pty.ReadInput(os.Stdin, true)
+		respond, err := pty.ReadInputEx(os.Stdin)
 		if err != nil {
 			return "", err
 		}

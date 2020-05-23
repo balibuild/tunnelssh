@@ -33,3 +33,8 @@ func ReadPassword(prompt string) (string, error) {
 	}
 	return string(pwd), nil
 }
+
+// ReadInputEx todo
+func ReadInputEx(fd *os.File) ([]byte, error) {
+	return ReadInput(fd, true)
+}
