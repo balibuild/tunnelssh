@@ -175,7 +175,7 @@ func parseSSH(flow chan token, system bool, depth uint8) *Config {
 		}
 	}()
 
-	result := newConfig()
+	result := &Config{}
 	result.position = Position{1, 1}
 	parser := &sshParser{
 		flow:          flow,

@@ -1,4 +1,4 @@
-// Package ssh_config provides tools for manipulating SSH config files.
+// Package sshconfig provides tools for manipulating SSH config files.
 //
 // Importantly, this parser attempts to preserve comments in a given file, so
 // you can manipulate a `ssh_config` file from a program, if your heart desires.
@@ -14,7 +14,7 @@
 // to disk.
 //
 //	f, _ := os.Open(filepath.Join(os.Getenv("HOME"), ".ssh", "config"))
-//	cfg, _ := ssh_config.Decode(f)
+//	cfg, _ := sshconfig.Decode(f)
 //	for _, host := range cfg.Hosts {
 //		fmt.Println("patterns:", host.Patterns)
 //		for _, node := range host.Nodes {
@@ -282,6 +282,7 @@ func (c Config) String() string {
 	return marshal(c).String()
 }
 
+// MarshalText todo
 func (c Config) MarshalText() ([]byte, error) {
 	return marshal(c).Bytes(), nil
 }
@@ -583,8 +584,8 @@ func NewInclude(directives []string, hasEquals bool, pos Position, comment strin
 }
 
 // Pos returns the position of the Include directive in the larger file.
-func (i *Include) Pos() Position {
-	return i.position
+func (inc *Include) Pos() Position {
+	return inc.position
 }
 
 // Get finds the first value in the Include statement matching the alias and the
@@ -627,18 +628,5 @@ func init() {
 	matchAll, err = NewPattern("*")
 	if err != nil {
 		panic(err)
-	}
-}
-
-func newConfig() *Config {
-	return &Config{
-		Hosts: []*Host{
-			&Host{
-				implicit: true,
-				Patterns: []*Pattern{matchAll},
-				Nodes:    make([]Node, 0),
-			},
-		},
-		depth: 0,
 	}
 }

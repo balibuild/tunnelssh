@@ -2,9 +2,11 @@
 
 package sshconfig
 
-import "path/filepath"
+import (
+	"os"
+)
 
-// /etc/ssh/ssh_config
+// C:\ProgramData\ssh\ssh_config
 func systemConfigFinder() string {
-	return filepath.Join("/", "etc", "ssh", "ssh_config")
+	return os.ExpandEnv("$ProgramData\\ssh\\ssh_config")
 }
