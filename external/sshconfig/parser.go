@@ -1,4 +1,4 @@
-package ssh_config
+package sshconfig
 
 import (
 	"fmt"

@@ -27,7 +27,7 @@
 //
 // BUG: the Match directive is currently unsupported; parsing a config with
 // a Match directive will trigger an error.
-package ssh_config
+package sshconfig
 
 import (
 	"bytes"
@@ -66,9 +66,8 @@ func homedir() string {
 	user, err := osuser.Current()
 	if err == nil {
 		return user.HomeDir
-	} else {
-		return os.Getenv("HOME")
 	}
+	return os.Getenv("HOME")
 }
 
 func userConfigFinder() string {
@@ -82,10 +81,6 @@ var DefaultUserSettings = &UserSettings{
 	IgnoreErrors:       false,
 	systemConfigFinder: systemConfigFinder,
 	userConfigFinder:   userConfigFinder,
-}
-
-func systemConfigFinder() string {
-	return filepath.Join("/", "etc", "ssh", "ssh_config")
 }
 
 func findVal(c *Config, alias, key string) (string, error) {

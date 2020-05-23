@@ -10,6 +10,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	ssh_config "github.com/balibuild/tunnelssh/external/sshconfig"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -130,6 +131,7 @@ func Dial(network, addr string, config *ssh.ClientConfig) (*ssh.Client, error) {
 }
 
 type client struct {
+	sshconfig           *ssh_config.Config
 	ssh                 *ssh.Client
 	config              *ssh.ClientConfig
 	sess                *ssh.Session
