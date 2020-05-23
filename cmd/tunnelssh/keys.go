@@ -122,7 +122,7 @@ func (c *client) PublicKeys() ([]ssh.Signer, error) {
 	if sigs, err := c.MatchPublicKeys(); err == nil {
 		return sigs, nil
 	}
-	keys := []string{"id_ed25519", "id_ecdsa", "id_rsa", "id_dsa"} // keys
+	keys := []string{"id_ed25519", "id_ecdsa", "id_rsa"} // keys
 	signers := make([]ssh.Signer, 0, len(keys))
 	for _, k := range keys {
 		sig, err := ks.Search(k)
