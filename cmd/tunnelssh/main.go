@@ -212,7 +212,9 @@ func (c *client) ParseArgv() error {
 		return cli.ErrorCat("SplitHost: ", err.Error())
 	}
 	c.argv = ae.Unresolved()[1:]
-	c.config.Auth = append(c.config.Auth, ssh.PasswordCallback(sshPasswordPrompt))
+	c.config.Auth = append(c.config.Auth, ssh.PasswordCallback(func() (secret string, err error) {
+		return AskPassword("Please Input password: ")
+	}))
 	c.ka = &KeyAgent{}
 	if c.ka.MakeAgent() == nil {
 		c.config.Auth = append(c.config.Auth, c.ka.UseAgent())
