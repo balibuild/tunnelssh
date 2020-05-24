@@ -109,6 +109,11 @@ func Get(alias, key string) string {
 	return DefaultUserSettings.Get(alias, key)
 }
 
+// GetEx is a wrapper around DefaultUserSettings.GetEx.
+func GetEx(alias, key string) string {
+	return DefaultUserSettings.GetEx(alias, key)
+}
+
 // GetStrict finds the first value for key within a declaration that matches the
 // alias. If key has a default value and no matching configuration is found, the
 // default will be returned. For more information on default values and the way
@@ -134,6 +139,64 @@ func (u *UserSettings) Get(alias, key string) string {
 		return ""
 	}
 	return val
+}
+
+// GetEx todo
+func (u *UserSettings) GetEx(alias, key string) string {
+	val, err := u.GetStrictEx(alias, key)
+	if err != nil {
+		return ""
+	}
+	return val
+}
+
+// ErrKeyNotExists todo
+var (
+	ErrKeyNotExists = errors.New("ssh config key not exists")
+)
+
+// GetStrictEx todo
+func (u *UserSettings) GetStrictEx(alias, key string) (string, error) {
+	u.loadConfigs.Do(func() {
+		// can't parse user file, that's ok.
+		var filename string
+		if u.userConfigFinder == nil {
+			filename = userConfigFinder()
+		} else {
+			filename = u.userConfigFinder()
+		}
+		var err error
+		u.userConfig, err = parseFile(filename)
+		//lint:ignore S1002 I prefer it this way
+		if err != nil && os.IsNotExist(err) == false {
+			u.onceErr = err
+			return
+		}
+		if u.systemConfigFinder == nil {
+			filename = systemConfigFinder()
+		} else {
+			filename = u.systemConfigFinder()
+		}
+		u.systemConfig, err = parseFile(filename)
+		//lint:ignore S1002 I prefer it this way
+		if err != nil && os.IsNotExist(err) == false {
+			u.onceErr = err
+			return
+		}
+	})
+	//lint:ignore S1002 I prefer it this way
+	if u.onceErr != nil && u.IgnoreErrors == false {
+		return "", u.onceErr
+	}
+	val, err := findVal(u.userConfig, alias, key)
+	if err != nil || val != "" {
+		return val, err
+	}
+	val2, err2 := findVal(u.systemConfig, alias, key)
+	if err2 != nil || val2 != "" {
+		return val2, err2
+	}
+	return "", ErrKeyNotExists
 }
 
 // GetStrict finds the first value for key within a declaration that matches the

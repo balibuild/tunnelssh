@@ -7,17 +7,18 @@ import (
 	"strings"
 	"time"
 
-	"github.com/balibuild/tunnelssh/external/sshconfig"
 	"github.com/balibuild/tunnelssh/pty"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/terminal"
 )
 
-type client struct {
-	sshconfig           *sshconfig.Config
+// SSHClient client
+type SSHClient struct {
 	ssh                 *ssh.Client
 	config              *ssh.ClientConfig
 	sess                *ssh.Session
+	home                string
+	IdentityFile        string
 	ka                  *KeyAgent
 	argv                []string // unresolved command argv
 	env                 map[string]string
@@ -31,23 +32,24 @@ type client struct {
 }
 
 // SendEnv todo
-func (c *client) SendEnv() error {
-	if len(c.env) == 0 {
+func (sc *SSHClient) SendEnv() error {
+	if len(sc.env) == 0 {
 		return nil
 	}
-	for k, v := range c.env {
+	for k, v := range sc.env {
 		DebugPrint("SetEnv %s=%s", k, v)
-		c.sess.Setenv(k, v)
+		sc.sess.Setenv(k, v)
 	}
 	return nil
 }
 
-func (c *client) Shell() error {
-	DebugPrint("ssh shell mode. host: %s", c.host)
-	c.sess.Stdout = os.Stdout
-	c.sess.Stderr = os.Stderr
-	c.sess.Stdin = os.Stdin
-	if c.mode == TerminalModeForce {
+// Shell to open a shell
+func (sc *SSHClient) Shell() error {
+	DebugPrint("ssh shell mode. host: %s", sc.host)
+	sc.sess.Stdout = os.Stdout
+	sc.sess.Stderr = os.Stderr
+	sc.sess.Stdin = os.Stdin
+	if sc.mode == TerminalModeForce {
 		x, y, err := pty.GetWinSize()
 		if err != nil {
 			return err
@@ -61,61 +63,62 @@ func (c *client) Shell() error {
 			ssh.TTY_OP_ISPEED: 115200, // baud in
 			ssh.TTY_OP_OSPEED: 115200, // baud out
 		}
-		if err := c.sess.RequestPty("xterm", y, x, modes); err != nil {
+		if err := sc.sess.RequestPty("xterm", y, x, modes); err != nil {
 			return err
 		}
 	}
-	if err := c.sess.Shell(); err != nil {
+	if err := sc.sess.Shell(); err != nil {
 		return err
 	}
-	return c.sess.Wait()
+	return sc.sess.Wait()
 }
 
 // Loop todo
-func (c *client) Loop() error {
-	_ = c.SendEnv()
-	if len(c.argv) == 0 {
-		return c.Shell()
+func (sc *SSHClient) Loop() error {
+	_ = sc.SendEnv()
+	if len(sc.argv) == 0 {
+		return sc.Shell()
 	}
-	c.sess.Stdout = os.Stdout
-	c.sess.Stderr = os.Stderr
-	c.sess.Stdin = os.Stdin
+	sc.sess.Stdout = os.Stdout
+	sc.sess.Stderr = os.Stderr
+	sc.sess.Stdin = os.Stdin
 	// git escape argv done
-	args := strings.Join(c.argv, " ")
+	args := strings.Join(sc.argv, " ")
 	DebugPrint("cmd: %s", args)
-	return c.sess.Run(args)
+	return sc.sess.Run(args)
 }
 
 // Dial todo
-func (c *client) Dial() error {
-	if c.connectTimeout != 0 {
-		c.config.Timeout = time.Duration(c.connectTimeout) * time.Second
+func (sc *SSHClient) Dial() error {
+	if sc.connectTimeout != 0 {
+		sc.config.Timeout = time.Duration(sc.connectTimeout) * time.Second
 	} else {
-		c.config.Timeout = 5 * time.Second
+		sc.config.Timeout = 5 * time.Second
 	}
-	addr := net.JoinHostPort(c.host, strconv.Itoa(c.port))
-	conn, err := Dial("tcp", addr, c.config)
+	addr := net.JoinHostPort(sc.host, strconv.Itoa(sc.port))
+	conn, err := Dial("tcp", addr, sc.config)
 	if err != nil {
 		return err
 	}
-	c.ssh = conn
-	sess, err := c.ssh.NewSession()
+	sc.ssh = conn
+	sess, err := sc.ssh.NewSession()
 	if err != nil {
 		return err
 	}
-	c.sess = sess
+	sc.sess = sess
 	return nil
 }
 
-func (c *client) Close() error {
-	if c.sess != nil {
-		c.sess.Close()
+// Close client
+func (sc *SSHClient) Close() error {
+	if sc.sess != nil {
+		sc.sess.Close()
 	}
-	if c.ka != nil {
-		c.ka.Close()
+	if sc.ka != nil {
+		sc.ka.Close()
 	}
-	if c.ssh != nil {
-		return c.ssh.Close()
+	if sc.ssh != nil {
+		return sc.ssh.Close()
 	}
 	return nil
 }

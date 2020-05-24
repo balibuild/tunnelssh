@@ -63,6 +63,7 @@ func checkKnownhost(host string, addr net.Addr, k ssh.PublicKey, knownfile strin
 	if len(knownfile) == 0 {
 		knownfile = defaultKnownhost
 	}
+	DebugPrint("found known_hosts: %s", knownfile)
 	callback, err := knownhosts.New(knownfile)
 	if err != nil {
 		return false, err
@@ -100,7 +101,7 @@ func (ka *KeyAgent) UseAgent() ssh.AuthMethod {
 }
 
 //HostKeyCallback todo
-func (c *client) HostKeyCallback(host string, remote net.Addr, key ssh.PublicKey) error {
+func (sc *SSHClient) HostKeyCallback(host string, remote net.Addr, key ssh.PublicKey) error {
 	ke, err := checkKnownhost(host, remote, key, "")
 	if ke {
 		return err
@@ -110,23 +111,8 @@ func (c *client) HostKeyCallback(host string, remote net.Addr, key ssh.PublicKey
 	return addKnownhost(host, remote, key, "")
 }
 
-// KeySearcher tod
-type KeySearcher struct {
-	home string
-}
-
-// Search todo
-func (ks *KeySearcher) Search(name string) (ssh.Signer, error) {
-	file := filepath.Join(ks.home, ".ssh", name)
-	if _, err := os.Stat(file); err != nil {
-		if os.IsNotExist(err) {
-			DebugPrint("Trying private key: %s: no such identity", file)
-		} else {
-			DebugPrint("%v", err)
-		}
-		return nil, err
-	}
-	fd, err := os.Open(file)
+func (sc *SSHClient) openPrivateKey(kf string) (ssh.Signer, error) {
+	fd, err := os.Open(kf)
 	if err != nil {
 		DebugPrint("%v", err)
 		return nil, err
@@ -143,28 +129,39 @@ func (ks *KeySearcher) Search(name string) (ssh.Signer, error) {
 		return nil, err
 	}
 	key := sig.PublicKey()
-	DebugPrint("Offering public key: %s %s", file, ssh.FingerprintSHA256(key))
+	DebugPrint("Offering public key: %s %s", kf, ssh.FingerprintSHA256(key))
 	return sig, nil
 }
 
-// MatchPublicKeys todo
-func (c *client) MatchPublicKeys() ([]ssh.Signer, error) {
-	return nil, errors.New("not found host matched keys")
+// SearchKey todo
+func (sc *SSHClient) SearchKey(name string) (ssh.Signer, error) {
+	file := filepath.Join(sc.home, ".ssh", name)
+	if _, err := os.Stat(file); err != nil {
+		if os.IsNotExist(err) {
+			DebugPrint("Trying private key: %s: no such identity", file)
+		} else {
+			DebugPrint("%v", err)
+		}
+		return nil, err
+	}
+	return sc.openPrivateKey(file)
 }
 
 // PublicKeys todo
-func (c *client) PublicKeys() ([]ssh.Signer, error) {
-
-	if sigs, err := c.MatchPublicKeys(); err == nil {
-		return sigs, nil
+func (sc *SSHClient) PublicKeys() ([]ssh.Signer, error) {
+	if len(sc.IdentityFile) != 0 {
+		sig, err := sc.openPrivateKey(PathConvert(sc.IdentityFile))
+		if err != nil {
+			return nil, errors.New("not found host matched keys")
+		}
+		return []ssh.Signer{sig}, nil
 	}
-	ks := KeySearcher{home: HomeDir()}
 	// We drop id_dsa key support
 	// http://www.openssh.com/txt/release-6.5
 	keys := []string{"id_ed25519", "id_ecdsa", "id_rsa"} // keys
 	signers := make([]ssh.Signer, 0, len(keys))
 	for _, k := range keys {
-		sig, err := ks.Search(k)
+		sig, err := sc.SearchKey(k)
 		if err == nil {
 			signers = append(signers, sig)
 		}
