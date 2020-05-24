@@ -1,6 +1,6 @@
 {
     "name": "ssh-askpass",
-    "description": "TunnelSSH - SSH AskPass Utility",
+    "description": "Askpass Utility for TunnelSSH",
     "destination": "bin",
     "version": "1.0.0",
     "goflags": [

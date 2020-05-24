@@ -21,7 +21,7 @@
 	"StringFileInfo": {
 		"Comments": "",
 		"CompanyName": "Bali Team",
-		"FileDescription": "Tunnel SSH AskPass Utility",
+		"FileDescription": "Askpass Utility for TunnelSSH",
 		"FileVersion": "",
 		"InternalName": "ssh-askpass.exe",
 		"LegalCopyright": "Copyright \u00A9 2020. Bali contributors",
