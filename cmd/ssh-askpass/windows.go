@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"syscall"
+	"unicode/utf16"
 	"unsafe"
 
 	"golang.org/x/sys/windows"
@@ -38,7 +39,7 @@ var (
 	user32                             = syscall.NewLazyDLL("user32.dll")
 	credui                             = syscall.NewLazyDLL("Credui.dll")
 	pGetActiveWindow                   = user32.NewProc("GetActiveWindow")
-	pCredUIPromptForCredentialsA       = credui.NewProc("CredUIPromptForCredentialsA")
+	pCredUIPromptForCredentialsW       = credui.NewProc("CredUIPromptForCredentialsW")
 	pCredUIPromptForWindowsCredentials = credui.NewProc("CredUIPromptForWindowsCredentialsW")
 	pCredUnPackAuthenticationBuffer    = credui.NewProc("CredUnPackAuthenticationBufferW")
 )
@@ -84,6 +85,7 @@ const (
 	FALSE                                       = 0
 	TRUE                                        = 1
 	CreduiMaxPasswordLength                     = 512
+	CreduiMaxUserNameLength                     = 512 + 1
 	CreduiFlagsIncorrectPassword         uint32 = 0x00001 // indicates the username is valid, but password is not
 	CreduiFlagsDoNotPersist              uint32 = 0x00002 // Do not show "Save" checkbox, and do not persist credentials
 	CreduiFlagsRequestAdministrator      uint32 = 0x00004 // Populate list box with admin accounts
@@ -112,30 +114,42 @@ type creduiinfoa struct {
 	hbmBanner      windows.Handle
 }
 
+type creduiinfow struct {
+	cbSize         uint32
+	hwnd           windows.Handle
+	pszMessageText *uint16
+	pszCaptionText *uint16
+	hbmBanner      windows.Handle
+}
+
 // CredUIPromptForCredentials todo
 func CredUIPromptForCredentials(prompt, user string) (string, error) {
-	var ci creduiinfoa
+	var ci creduiinfow
 	ci.cbSize = uint32(unsafe.Sizeof(ci))
-	ci.pszCaptionText = syscall.StringBytePtr(prompt)
-	ci.pszMessageText = syscall.StringBytePtr("TunnelSSH - Please enter password")
+	ci.pszCaptionText = syscall.StringToUTF16Ptr(prompt)
+	ci.pszMessageText = syscall.StringToUTF16Ptr("TunnelSSH - Please enter password")
 	ci.hwnd = GetActiveWindow()
-
 	ci.hbmBanner = windows.Handle(0)
-	passwd := make([]byte, CreduiMaxPasswordLength+1)
+	passwd := make([]uint16, CreduiMaxPasswordLength+1)
+	username := make([]uint16, 0, CreduiMaxUserNameLength)
+	//https://medium.com/jettech/breaking-all-the-rules-using-go-to-call-windows-api-2cbfd8c79724
+	userbuf := utf16.Encode([]rune(user + "\x00"))
+	username = append(username, userbuf...)
+
 	fSave := FALSE
 	//fSave := windows.FALSE
 	flags := CreduiFlagsGenericCredentials | CreduiFlagsKeepUsername | CreduiFlagsPasswordOnlyOK | CreduiFlagsAlwaysShowUI | CreduiFlagsDoNotPersist
-	r, _, _ := pCredUIPromptForCredentialsA.Call(
+	r, _, _ := pCredUIPromptForCredentialsW.Call(
 		uintptr(unsafe.Pointer(&ci)),
-		uintptr(unsafe.Pointer(syscall.StringBytePtr("TheServer"))),
-		NULL, //Reserved
-		0,    // Reason
-		uintptr(unsafe.Pointer(syscall.StringBytePtr(user))), //User
-		0,                                   // Max number of char of user name
-		uintptr(unsafe.Pointer(&passwd[0])), // Password
-		CreduiMaxPasswordLength+1,           // Max number of password length
-		uintptr(unsafe.Pointer(&fSave)),     // State of save check box
-		uintptr(flags),                      // flags
+		uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr("TheServer"))),
+		NULL,                                  //Reserved
+		0,                                     // Reason
+		uintptr(unsafe.Pointer(&username[0])), //User
+		uintptr(CreduiMaxPasswordLength),      // Max number of char of user name
+		uintptr(unsafe.Pointer(&passwd[0])),   // Password
+		uintptr(CreduiMaxPasswordLength+1),    // Max number of password length
+		uintptr(unsafe.Pointer(&fSave)),       // State of save check box
+		uintptr(flags),                        // flags
 	)
 	if r != 0 {
 		return "", fmt.Errorf("CredUIPromptForCredentials return %d", r)
@@ -146,7 +160,7 @@ func CredUIPromptForCredentials(prompt, user string) (string, error) {
 			break
 		}
 	}
-	return string(passwd[:n]), nil
+	return string(utf16.Decode(passwd[:n])), nil
 }
 
 // https://github.com/jeroen/askpass/blob/master/src/win32/win-askpass.c
@@ -156,6 +170,7 @@ func CredUIPromptForCredentials(prompt, user string) (string, error) {
 func AskPassword(caption, title string) int {
 	passwd, err := CredUIPromptForCredentials(caption, title)
 	if err != nil {
+		fmt.Fprintf(os.Stderr, "CredUIPromptForCredentials: %s\n", err)
 		return 1
 	}
 	fmt.Fprintf(os.Stdout, "%s\n", passwd)
