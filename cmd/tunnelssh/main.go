@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/balibuild/tunnelssh/cli"
+	"github.com/balibuild/tunnelssh/tunnel"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -178,6 +179,10 @@ func (sc *SSHClient) ParseArgv() error {
 			ssh.KeyAlgoSKED25519,
 		},
 		HostKeyCallback: sc.HostKeyCallback,
+		Auth: []ssh.AuthMethod{
+			ssh.RetryableAuthMethod(ssh.PasswordCallback(sc.AskPassword), 3),
+			ssh.PublicKeysCallback(sc.PublicKeys),
+		},
 	}
 	sc.env = make(map[string]string)
 	var ae cli.ArgvParser
@@ -210,20 +215,15 @@ func (sc *SSHClient) ParseArgv() error {
 	if sc.port == 0 {
 		sc.port = 22
 	}
-	sc.config.Auth = append(sc.config.Auth, ssh.PasswordCallback(func() (secret string, err error) {
-		return AskPassword("Password")
-	}))
 	sc.ka = &KeyAgent{}
 	if sc.ka.MakeAgent() == nil {
 		sc.config.Auth = append(sc.config.Auth, sc.ka.UseAgent())
-	} else {
-		sc.config.Auth = append(sc.config.Auth, ssh.PublicKeysCallback(sc.PublicKeys))
 	}
 	return nil
 }
 
 func main() {
-	sc := &SSHClient{home: HomeDir()}
+	sc := &SSHClient{home: tunnel.HomeDir()}
 	if err := sc.ParseArgv(); err != nil {
 		fmt.Fprintf(os.Stderr, "ParseArgv: %s\n", err)
 		os.Exit(1)

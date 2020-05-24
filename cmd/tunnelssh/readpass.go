@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/balibuild/tunnelssh/pty"
-	"golang.org/x/crypto/ssh"
 )
 
 // GIT_ASKPASS
@@ -62,20 +61,10 @@ func readAskPass(prompt string, flags int) (string, error) {
 	return ln, nil
 }
 
-// The authenticity of host 'github.com (140.82.113.4)' can't be established.
-// RSA key fingerprint is SHA256:nThbg6kXUpJWGl7E1IGOCspRomTxdCARLviKw6E5SY8.
-// Are you sure you want to continue connecting (yes/no/[fingerprint])
-
-func askIsHostTrusted(host string, key ssh.PublicKey) bool {
-	fintgerprint := ssh.FingerprintSHA256(key)
-	DebugPrint("Fingerprint %s", fintgerprint)
-	return false
-}
-
 // AskPassword todo
-func AskPassword(prompt string) (string, error) {
+func (sc *SSHClient) AskPassword() (string, error) {
 	if pty.IsTerminal(os.Stdin) {
-		return pty.ReadPassword(prompt)
+		return pty.ReadPassword("Password")
 	}
-	return readAskPass(prompt, 0)
+	return readAskPass("Password", 0)
 }

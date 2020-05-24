@@ -45,8 +45,8 @@ func (sc *SSHClient) SendEnv() error {
 	return nil
 }
 
-// Shell to open a shell
-func (sc *SSHClient) Shell() error {
+// RunInteractive to open a shell
+func (sc *SSHClient) RunInteractive() error {
 	DebugPrint("ssh shell mode. host: %s", sc.host)
 	sc.sess.Stdout = os.Stdout
 	sc.sess.Stderr = os.Stderr
@@ -79,7 +79,7 @@ func (sc *SSHClient) Shell() error {
 func (sc *SSHClient) Loop() error {
 	_ = sc.SendEnv()
 	if len(sc.argv) == 0 {
-		return sc.Shell()
+		return sc.RunInteractive()
 	}
 	sc.sess.Stdout = os.Stdout
 	sc.sess.Stderr = os.Stderr
