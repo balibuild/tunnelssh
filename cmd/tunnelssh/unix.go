@@ -41,13 +41,3 @@ func (ka *KeyAgent) MakeAgent() error {
 	ka.conn = conn
 	return nil
 }
-
-func DefaultKnownHosts() string {
-	return os.ExpandEnv("$HOME/.ssh/known_hosts")
-}
-
-// Initialize todo
-func (ks *KeySearcher) Initialize() error {
-	ks.home = os.ExpandEnv("$HOME")
-	return nil
-}

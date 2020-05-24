@@ -6,6 +6,8 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"runtime"
+	"strings"
 
 	"github.com/balibuild/tunnelssh/cli"
 	"golang.org/x/crypto/ssh"
@@ -13,13 +15,32 @@ import (
 	"golang.org/x/crypto/ssh/knownhosts"
 )
 
+// PathConvert todo
+func PathConvert(p string) string {
+	if !strings.HasPrefix(p, "~") {
+		return p
+	}
+	if runtime.GOOS == "windows" {
+		return filepath.Join(os.Getenv("USERPROFILE"), p[1:])
+	}
+	return filepath.Join(os.Getenv("HOME"), p[1:])
+}
+
+// HomeDir todo
+func HomeDir() string {
+	if runtime.GOOS == "windows" {
+		return os.Getenv("USERPROFILE")
+	}
+	return os.Getenv("HOME")
+}
+
 // search keys
 
 func khnormalize(addr net.Addr, k ssh.PublicKey) string {
 	return cli.StrCat(knownhosts.Normalize(addr.String()), " ", k.Type(), " ", string(k.Marshal()), "\n")
 }
 
-var defaultKnownhost = DefaultKnownHosts()
+var defaultKnownhost = PathConvert("~/.ssh/known_hosts")
 
 func addKnownhost(host string, addr net.Addr, k ssh.PublicKey, knownfile string) error {
 	if len(knownfile) == 0 {
@@ -97,6 +118,14 @@ type KeySearcher struct {
 // Search todo
 func (ks *KeySearcher) Search(name string) (ssh.Signer, error) {
 	file := filepath.Join(ks.home, ".ssh", name)
+	if _, err := os.Stat(file); err != nil {
+		if os.IsNotExist(err) {
+			DebugPrint("Trying private key: %s: no such identity", file)
+		} else {
+			DebugPrint("%v", err)
+		}
+		return nil, err
+	}
 	fd, err := os.Open(file)
 	if err != nil {
 		DebugPrint("%v", err)
@@ -105,9 +134,17 @@ func (ks *KeySearcher) Search(name string) (ssh.Signer, error) {
 	defer fd.Close()
 	buf, err := ioutil.ReadAll(fd)
 	if err != nil {
+		DebugPrint("%v", err)
 		return nil, err
 	}
-	return ssh.ParsePrivateKey(buf)
+	sig, err := ssh.ParsePrivateKey(buf)
+	if err != nil {
+		DebugPrint("%v", err)
+		return nil, err
+	}
+	key := sig.PublicKey()
+	DebugPrint("Offering public key: %s %s", file, ssh.FingerprintSHA256(key))
+	return sig, nil
 }
 
 // MatchPublicKeys todo
@@ -117,18 +154,18 @@ func (c *client) MatchPublicKeys() ([]ssh.Signer, error) {
 
 // PublicKeys todo
 func (c *client) PublicKeys() ([]ssh.Signer, error) {
-	var ks KeySearcher
-	ks.Initialize()
+
 	if sigs, err := c.MatchPublicKeys(); err == nil {
 		return sigs, nil
 	}
+	ks := KeySearcher{home: HomeDir()}
+	// We drop id_dsa key support
+	// http://www.openssh.com/txt/release-6.5
 	keys := []string{"id_ed25519", "id_ecdsa", "id_rsa"} // keys
 	signers := make([]ssh.Signer, 0, len(keys))
 	for _, k := range keys {
 		sig, err := ks.Search(k)
 		if err == nil {
-			key := sig.PublicKey()
-			DebugPrint("%s: %s", k, ssh.FingerprintSHA256(key))
 			signers = append(signers, sig)
 		}
 	}

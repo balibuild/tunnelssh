@@ -7,14 +7,14 @@ import (
 	"strings"
 	"time"
 
-	ssh_config "github.com/balibuild/tunnelssh/external/sshconfig"
+	"github.com/balibuild/tunnelssh/external/sshconfig"
 	"github.com/balibuild/tunnelssh/pty"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/terminal"
 )
 
 type client struct {
-	sshconfig           *ssh_config.Config
+	sshconfig           *sshconfig.Config
 	ssh                 *ssh.Client
 	config              *ssh.ClientConfig
 	sess                *ssh.Session
