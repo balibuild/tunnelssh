@@ -53,21 +53,6 @@ func GetActiveWindow() windows.Handle {
 	return windows.Handle(h)
 }
 
-/*
-CREDUIAPI DWORD CredUIPromptForCredentialsW(
-  PCREDUI_INFOW pUiInfo,
-  PCWSTR        pszTargetName,
-  PCtxtHandle   pContext,
-  DWORD         dwAuthError,
-  PWSTR         pszUserName,
-  ULONG         ulUserNameBufferSize,
-  PWSTR         pszPassword,
-  ULONG         ulPasswordBufferSize,
-  BOOL          *save,
-  DWORD         dwFlags
-);
-*/
-
 // #define CREDUIWIN_GENERIC                   0x00000001  // Plain text username/password is being requested
 // #define CREDUIWIN_CHECKBOX                  0x00000002  // Show the Save Credential checkbox
 // #define CREDUIWIN_AUTHPACKAGE_ONLY          0x00000010  // Only Cred Providers that support the input auth package should enumerate
@@ -84,7 +69,7 @@ const (
 	NULL                                        = uintptr(0)
 	FALSE                                       = 0
 	TRUE                                        = 1
-	CreduiMaxPasswordLength                     = 512
+	CreduiMaxPasswordLength                     = 256
 	CreduiMaxUserNameLength                     = 512 + 1
 	CreduiFlagsIncorrectPassword         uint32 = 0x00001 // indicates the username is valid, but password is not
 	CreduiFlagsDoNotPersist              uint32 = 0x00002 // Do not show "Save" checkbox, and do not persist credentials
@@ -99,11 +84,23 @@ const (
 	CreduiFlagsCompleteUsername          uint32 = 0x00800 //
 	CreduiFlagsPersist                   uint32 = 0x01000 // Do not show "Save" checkbox, but persist credentials anyway
 	CreduiFlagsServerCredential          uint32 = 0x04000
-	CreduiFlagsExpectConfirmation        uint32 = 0x20000  // do not persist unless caller later confirms credential via CredUIConfirmCredential() api
-	CreduiFlagsGenericCredentials        uint32 = 0x40000  // Credential is a generic credential
-	CreduiFlagsUsernameTargetCredentials uint32 = 0x80000  // Credential has a username as the target
-	CreduiFlagsKeepUsername              uint32 = 0x100000 // don't allow the user to change the supplied username
-
+	CreduiFlagsExpectConfirmation        uint32 = 0x20000    // do not persist unless caller later confirms credential via CredUIConfirmCredential() api
+	CreduiFlagsGenericCredentials        uint32 = 0x40000    // Credential is a generic credential
+	CreduiFlagsUsernameTargetCredentials uint32 = 0x80000    // Credential has a username as the target
+	CreduiFlagsKeepUsername              uint32 = 0x100000   // don't allow the user to change the supplied username
+	CreduiwinGeneric                     uint32 = 0x00000001 // Plain text username/password is being requested
+	CreduiwinCheckbox                    uint32 = 0x00000002 // Show the Save Credential checkbox
+	CreduiwinAuthpackageOnly             uint32 = 0x00000010 // Only Cred Providers that support the input auth package should enumerate
+	CreduiwinInCredOnly                  uint32 = 0x00000020 // Only the incoming cred for the specific auth package should be enumerated
+	CreduiwinEnumerateAdmins             uint32 = 0x00000100 // Cred Providers should enumerate administrators only
+	CreduiwinEnumerateCurrentUser        uint32 = 0x00000200 // Only the incoming cred for the specific auth package should be enumerated
+	CreduiwinSecurePrompt                uint32 = 0x00001000 // The Credui prompt should be displayed on the secure desktop
+	CreduiwinPreprompting                uint32 = 0x00002000 // CredUI is invoked by SspiPromptForCredentials and the client is prompting before a prior handshake
+	CreduiwinPack32WoW                   uint32 = 0x10000000 // Tell the credential provider it should be packing its Auth Blob 32 bit even though it is running 64 native
+	CredPackProtectedCredentials         uint32 = 0x1
+	CredPackWOWBuffer                    uint32 = 0x2
+	CredPackGenericCredentials           uint32 = 0x4
+	CredPackIDProviderCredentials        uint32 = 0x8
 )
 
 type creduiinfoa struct {
@@ -120,6 +117,58 @@ type creduiinfow struct {
 	pszMessageText *uint16
 	pszCaptionText *uint16
 	hbmBanner      windows.Handle
+}
+
+// CredUIPromptForWindowsCredentials modern UI
+func CredUIPromptForWindowsCredentials(prompt, user string) (string, error) {
+	var ci creduiinfow
+	ci.cbSize = uint32(unsafe.Sizeof(ci))
+	ci.pszCaptionText = syscall.StringToUTF16Ptr(prompt)
+	ci.pszMessageText = syscall.StringToUTF16Ptr("TunnelSSH - Please enter password")
+	ci.hwnd = GetActiveWindow()
+	ci.hbmBanner = windows.Handle(0)
+	var authPackage uint32
+	cred := make([]uint8, CreduiMaxPasswordLength+1)
+	username := make([]uint16, CreduiMaxUserNameLength+1)
+	passwd := make([]uint16, CreduiMaxPasswordLength+1)
+	ulen := uint32(CreduiMaxUserNameLength + 1)
+	plen := uint32(CreduiMaxPasswordLength + 1)
+	domain := make([]uint16, CreduiMaxPasswordLength+1)
+	dlen := uint32(CreduiMaxUserNameLength + 1)
+	outCredSize := uint32(CreduiMaxPasswordLength)
+	fSave := FALSE
+	r, _, _ := pCredUIPromptForWindowsCredentials.Call(
+		uintptr(unsafe.Pointer(&ci)),
+		0,
+		uintptr(unsafe.Pointer(&authPackage)),
+		NULL,
+		0,
+		uintptr(unsafe.Pointer(&cred[0])),
+		uintptr(unsafe.Pointer(&outCredSize)),
+		uintptr(unsafe.Pointer(&fSave)),
+		uintptr(CreduiwinGeneric),
+	)
+	if r != 0 {
+		return "", fmt.Errorf("CredUIPromptForWindowsCredentials %v", windows.GetLastError())
+	}
+	fmt.Fprintf(os.Stderr, "DEBUG: %d %d\n", outCredSize, authPackage)
+	//https://docs.microsoft.com/en-us/windows/win32/api/wincred/nf-wincred-credunpackauthenticationbufferw
+	r, _, _ = pCredUnPackAuthenticationBuffer.Call(
+		uintptr(0),
+		uintptr(unsafe.Pointer(&cred[0])),
+		uintptr(outCredSize),
+		uintptr(unsafe.Pointer(&username[0])),
+		uintptr(unsafe.Pointer(&ulen)),
+		uintptr(unsafe.Pointer(&domain[0])),
+		uintptr(unsafe.Pointer(&dlen)),
+		uintptr(unsafe.Pointer(&passwd[0])),
+		uintptr(unsafe.Pointer(&plen)),
+	)
+	fmt.Fprintf(os.Stderr, "%v\n%v\n%v\nr %d\n", cred, username, passwd, r)
+	if r == FALSE {
+		return "", fmt.Errorf("CredUnPackAuthenticationBuffer %v", windows.GetLastError())
+	}
+	return string(utf16.Decode(passwd[:plen])), nil
 }
 
 // CredUIPromptForCredentials todo
@@ -170,7 +219,7 @@ func CredUIPromptForCredentials(prompt, user string) (string, error) {
 func AskPassword(caption, title string) int {
 	passwd, err := CredUIPromptForCredentials(caption, title)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "CredUIPromptForCredentials: %s\n", err)
+		fmt.Fprintf(os.Stderr, "Credentials: %s\n", err)
 		return 1
 	}
 	fmt.Fprintf(os.Stdout, "%s\n", passwd)
