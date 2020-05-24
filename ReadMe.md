@@ -14,3 +14,8 @@ TUNNEL_DEBUG=1 git-tunnel clone git@github.com:bailbuild/tunnelssh.git
 ## Snapshot
 
 ![](./docs/images/snapshot.png)
+
+TunnelSSH ssh-askpass:
+
+![](./docs/images/ssh-askpass.png)
+

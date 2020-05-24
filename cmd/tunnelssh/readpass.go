@@ -2,11 +2,11 @@ package main
 
 import (
 	"bufio"
-	"errors"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/balibuild/tunnelssh/pty"
@@ -27,12 +27,18 @@ const (
 
 // AttachConsole
 
-func readAskPass(prompt string, flags int) (string, error) {
-	askpass := os.Getenv("SSH_ASKPASS")
-	if len(askpass) == 0 {
-		return "", errors.New("SSH_ASKPASS not set")
+func readAskPass(prompt, user string, passwd bool) (string, error) {
+	exe, err := os.Executable()
+	if err != nil {
+		return "", err
 	}
-	cmd := exec.Command(askpass, prompt)
+	askpass := filepath.Join(filepath.Dir(exe), "ssh-askpass")
+	cmd := exec.Command(askpass)
+	if passwd {
+		cmd.Args = append(cmd.Args, "-p", prompt, "-u", user)
+	} else {
+		cmd.Args = append(cmd.Args, prompt)
+	}
 	cmd.Stderr = os.Stderr //bind stderr
 	in, err := cmd.StdoutPipe()
 	if err != nil {
@@ -60,7 +66,7 @@ func AskPrompt(prompt string) (string, error) {
 		}
 		return string(respond), nil
 	}
-	return readAskPass(prompt, AskNone)
+	return readAskPass(prompt, "", false)
 }
 
 // AskPassword todo
@@ -68,5 +74,5 @@ func (sc *SSHClient) AskPassword() (string, error) {
 	if pty.IsTerminal(os.Stdin) {
 		return pty.ReadPassword("Password")
 	}
-	return readAskPass("Password", 0)
+	return readAskPass("TunnelSSH Password", sc.config.User, true)
 }

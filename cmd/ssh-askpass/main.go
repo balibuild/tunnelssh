@@ -11,6 +11,7 @@ import (
 type askPassOption struct {
 	PasswordMode bool
 	Args         []string
+	User         string
 }
 
 func usage() {
@@ -19,6 +20,7 @@ usage: %s <option> args ...
   -h|--help        Show usage text and quit
   -v|--version     Show version number and quit
   -V|--verbose     Make the operation more talkative
+  -u|--user        UserName for password enter
   -p|--password    Prompt user to enter password. default Yes/No confirmation
 
 `, os.Args[0])
@@ -50,10 +52,10 @@ func (a *askPassOption) Invoke(val int, oa, raw string) error {
 	case 'v':
 		version()
 		os.Exit(0)
-	case 'P':
-		a.PasswordMode = true
+	case 'u':
+		a.User = oa
 	case 'p':
-		a.PasswordMode = false
+		a.PasswordMode = true
 	}
 	return nil
 }
@@ -63,7 +65,8 @@ func (a *askPassOption) ParseArgv() error {
 	ae.Add("help", cli.NOARG, 'h')
 	ae.Add("version", cli.NOARG, 'v')
 	ae.Add("verbose", cli.NOARG, 'V')
-	ae.Add("password", cli.REQUIRED, 'p')
+	ae.Add("password", cli.NOARG, 'p')
+	ae.Add("user", cli.REQUIRED, 'u')
 
 	if err := ae.Execute(os.Args, a); err != nil {
 		return err
@@ -71,6 +74,9 @@ func (a *askPassOption) ParseArgv() error {
 	a.Args = ae.Unresolved()
 	if len(a.Args) == 0 {
 		return errors.New("missing prompt")
+	}
+	if a.User == "" {
+		a.User = "N/A"
 	}
 	return nil
 }
@@ -83,7 +89,7 @@ func main() {
 		os.Exit(1)
 	}
 	if a.PasswordMode {
-		os.Exit(AskPassword(os.Args[0], "TunnelSSH AskPass password prompt"))
+		os.Exit(AskPassword(os.Args[0], a.User))
 	}
 	os.Exit(AskYes(a.Args[0], "TunnelSSH AskPass Yes/No confirm"))
 }
