@@ -10,6 +10,7 @@
     ],
     "dirs": [
         "cmd/tunnelssh",
+        "cmd/netcat",
         "cmd/git-tunnel"
     ]
 }
