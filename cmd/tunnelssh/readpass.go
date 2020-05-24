@@ -25,18 +25,7 @@ const (
 	AskEcho = 1
 )
 
-// AskPrompt todo
-func AskPrompt(prompt string) (string, error) {
-	if pty.IsTerminal(os.Stdin) {
-		fmt.Fprintf(os.Stderr, "%s: ", prompt)
-		respond, err := pty.ReadInputEx(os.Stdin)
-		if err != nil {
-			return "", err
-		}
-		return string(respond), nil
-	}
-	return readAskPass(prompt, AskNone)
-}
+// AttachConsole
 
 func readAskPass(prompt string, flags int) (string, error) {
 	askpass := os.Getenv("SSH_ASKPASS")
@@ -59,6 +48,19 @@ func readAskPass(prompt string, flags int) (string, error) {
 	ln = strings.TrimSuffix(ln, "\r")
 	cmd.Wait()
 	return ln, nil
+}
+
+// AskPrompt todo
+func AskPrompt(prompt string) (string, error) {
+	if pty.IsTerminal(os.Stdin) {
+		fmt.Fprintf(os.Stderr, "%s: ", prompt)
+		respond, err := pty.ReadInputEx(os.Stdin)
+		if err != nil {
+			return "", err
+		}
+		return string(respond), nil
+	}
+	return readAskPass(prompt, AskNone)
 }
 
 // AskPassword todo

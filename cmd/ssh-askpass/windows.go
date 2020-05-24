@@ -4,28 +4,38 @@ package main
 
 import (
 	"syscall"
-	"unsafe"
+
+	"golang.org/x/sys/windows"
 )
 
 // MessageBox todo
 func MessageBox(hwnd uintptr, caption, title string, flags uint) int {
-	ret, _, _ := syscall.NewLazyDLL("user32.dll").NewProc("MessageBoxW").Call(
-		uintptr(hwnd),
-		uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(caption))),
-		uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(title))),
-		uintptr(flags))
-
+	ret, _ := windows.MessageBox(
+		windows.Handle(hwnd),
+		syscall.StringToUTF16Ptr(caption),
+		syscall.StringToUTF16Ptr(title),
+		uint32(flags))
 	return int(ret)
 }
 
-// MessageBoxPlain of Win32 API.
-func MessageBoxPlain(title, caption string) int {
-	const (
-		NULL = 0
-		MBOK = 0
-	)
-	return MessageBox(NULL, caption, title, MBOK)
+// defined
+const (
+	IDYES = 6
+)
+
+// AskYes todo
+func AskYes(caption, title string) int {
+	if MessageBox(0, caption, title, windows.MB_YESNO|windows.MB_ICONWARNING) == IDYES {
+		return 0
+	}
+	return 1
 }
 
 // https://github.com/jeroen/askpass/blob/master/src/win32/win-askpass.c
 // Credui.dll
+
+// AskPassword todo
+func AskPassword(caption, title string) int {
+
+	return 1
+}
