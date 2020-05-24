@@ -7,7 +7,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/balibuild/tunnelssh/cli"
 	"github.com/balibuild/tunnelssh/pty"
+	"github.com/balibuild/tunnelssh/tunnel"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/terminal"
 )
@@ -88,6 +90,26 @@ func (sc *SSHClient) Loop() error {
 	return sc.sess.Run(args)
 }
 
+// DialTunnel todo
+func DialTunnel(network, addr string, config *ssh.ClientConfig) (*ssh.Client, error) {
+	var bm tunnel.BoringMachine
+	if IsDebugMode {
+		bm.Debug = func(msg string) {
+			_, _ = os.Stderr.WriteString(cli.StrCat("debug3: \x1b[33m", msg, "\x1b[0m\n"))
+		}
+	}
+	_ = bm.Initialize()
+	conn, err := bm.DialTimeout(network, addr, config.Timeout)
+	if err != nil {
+		return nil, err
+	}
+	c, chans, reqs, err := ssh.NewClientConn(conn, addr, config)
+	if err != nil {
+		return nil, err
+	}
+	return ssh.NewClient(c, chans, reqs), nil
+}
+
 // Dial todo
 func (sc *SSHClient) Dial() error {
 	if sc.connectTimeout != 0 {
@@ -96,7 +118,7 @@ func (sc *SSHClient) Dial() error {
 		sc.config.Timeout = 5 * time.Second
 	}
 	addr := net.JoinHostPort(sc.host, strconv.Itoa(sc.port))
-	conn, err := Dial("tcp", addr, sc.config)
+	conn, err := DialTunnel("tcp", addr, sc.config)
 	if err != nil {
 		return err
 	}
