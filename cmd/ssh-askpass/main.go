@@ -89,7 +89,7 @@ func main() {
 		os.Exit(1)
 	}
 	if a.PasswordMode {
-		os.Exit(AskPassword(os.Args[0], a.User))
+		os.Exit(AskPassword(a.Args[0], a.User))
 	}
 	os.Exit(AskYes(a.Args[0], "TunnelSSH AskPass Yes/No confirm"))
 }

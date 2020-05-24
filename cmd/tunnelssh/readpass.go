@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/balibuild/tunnelssh/cli"
 	"github.com/balibuild/tunnelssh/pty"
 )
 
@@ -74,5 +75,5 @@ func (sc *SSHClient) AskPassword() (string, error) {
 	if pty.IsTerminal(os.Stdin) {
 		return pty.ReadPassword("Password")
 	}
-	return readAskPass("TunnelSSH Password", sc.config.User, true)
+	return readAskPass(cli.StrCat("TunnelSSH connect to ", sc.config.User, "@", sc.host, " password: "), sc.config.User, true)
 }

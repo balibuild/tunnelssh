@@ -123,8 +123,8 @@ type creduiinfow struct {
 func CredUIPromptForWindowsCredentials(prompt, user string) (string, error) {
 	var ci creduiinfow
 	ci.cbSize = uint32(unsafe.Sizeof(ci))
-	ci.pszCaptionText = syscall.StringToUTF16Ptr(prompt)
-	ci.pszMessageText = syscall.StringToUTF16Ptr("TunnelSSH - Please enter password")
+	ci.pszCaptionText = syscall.StringToUTF16Ptr("TunnelSSH - SSH AskPass Utility")
+	ci.pszMessageText = syscall.StringToUTF16Ptr(prompt)
 	ci.hwnd = GetActiveWindow()
 	ci.hbmBanner = windows.Handle(0)
 	var authPackage uint32
@@ -175,8 +175,8 @@ func CredUIPromptForWindowsCredentials(prompt, user string) (string, error) {
 func CredUIPromptForCredentials(prompt, user string) (string, error) {
 	var ci creduiinfow
 	ci.cbSize = uint32(unsafe.Sizeof(ci))
-	ci.pszCaptionText = syscall.StringToUTF16Ptr(prompt)
-	ci.pszMessageText = syscall.StringToUTF16Ptr("TunnelSSH - Please enter password")
+	ci.pszCaptionText = syscall.StringToUTF16Ptr("TunnelSSH - SSH AskPass Utility")
+	ci.pszMessageText = syscall.StringToUTF16Ptr(prompt)
 	ci.hwnd = GetActiveWindow()
 	ci.hbmBanner = windows.Handle(0)
 	passwd := make([]uint16, CreduiMaxPasswordLength+1)
