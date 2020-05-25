@@ -70,7 +70,7 @@ func TaskDialog(caption, title string) int {
 		uintptr(GetActiveWindow()),
 		uintptr(h), // Mode
 		uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(title))),
-		uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr("Askpass Utility confirm"))), //icon
+		uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr("Askpass Utility Confirm"))), //icon
 		uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(caption))),                   //icon
 		uintptr(TDCBFYESBUTTON|TDCBFOKBUTTON),
 		uintptr(unsafe.Pointer(&nButtonPressed)),
