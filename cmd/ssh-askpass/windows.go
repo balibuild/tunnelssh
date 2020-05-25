@@ -12,36 +12,34 @@ import (
 	"golang.org/x/sys/windows"
 )
 
-// MessageBox todo
-func MessageBox(hwnd uintptr, caption, title string, flags uint) int {
-	ret, _ := windows.MessageBox(
-		windows.Handle(hwnd),
-		syscall.StringToUTF16Ptr(caption),
-		syscall.StringToUTF16Ptr(title),
-		uint32(flags))
-	return int(ret)
-}
-
-// defined
-const (
-	IDYES = 6
-)
-
-// AskYes todo
-func AskYes(caption, title string) int {
-	if MessageBox(0, caption, title, windows.MB_YESNO|windows.MB_ICONWARNING) == IDYES {
-		return 0
-	}
-	return 1
-}
-
 var (
+	kernel32                           = syscall.NewLazyDLL("kernel32.dll")
 	user32                             = syscall.NewLazyDLL("user32.dll")
 	credui                             = syscall.NewLazyDLL("Credui.dll")
+	comctl32                           = syscall.NewLazyDLL("comctl32.dll")
+	pGetModuleHandleW                  = kernel32.NewProc("GetModuleHandleW")
 	pGetActiveWindow                   = user32.NewProc("GetActiveWindow")
 	pCredUIPromptForCredentialsW       = credui.NewProc("CredUIPromptForCredentialsW")
 	pCredUIPromptForWindowsCredentials = credui.NewProc("CredUIPromptForWindowsCredentialsW")
 	pCredUnPackAuthenticationBuffer    = credui.NewProc("CredUnPackAuthenticationBufferW")
+	pTaskDialog                        = comctl32.NewProc("TaskDialog")
+)
+
+// defined
+const (
+	IDOK              = 1
+	IDCANCEL          = 2
+	IDABORT           = 3
+	IDRETRY           = 4
+	IDIGNORE          = 5
+	IDYES             = 6
+	IDNO              = 7
+	TDCBFOKBUTTON     = 0x0001 // selected control return value IDOK
+	TDCBFYESBUTTON    = 0x0002 // selected control return value IDYES
+	TDCBFNOBUTTON     = 0x0004 // selected control return value IDNO
+	TDCBFCANCELBUTTON = 0x0008 // selected control return value IDCANCEL
+	TDCBFRETRYBUTTON  = 0x0010 // selected control return value IDRETRY
+	TDCBFCLOSEBUTTON  = 0x0020 // selected control return value IDCLOSE
 )
 
 // GetActiveWindow todo
@@ -53,15 +51,51 @@ func GetActiveWindow() windows.Handle {
 	return windows.Handle(h)
 }
 
-// #define CREDUIWIN_GENERIC                   0x00000001  // Plain text username/password is being requested
-// #define CREDUIWIN_CHECKBOX                  0x00000002  // Show the Save Credential checkbox
-// #define CREDUIWIN_AUTHPACKAGE_ONLY          0x00000010  // Only Cred Providers that support the input auth package should enumerate
-// #define CREDUIWIN_IN_CRED_ONLY              0x00000020  // Only the incoming cred for the specific auth package should be enumerated
-// #define CREDUIWIN_ENUMERATE_ADMINS          0x00000100  // Cred Providers should enumerate administrators only
-// #define CREDUIWIN_ENUMERATE_CURRENT_USER    0x00000200  // Only the incoming cred for the specific auth package should be enumerated
-// #define CREDUIWIN_SECURE_PROMPT             0x00001000  // The Credui prompt should be displayed on the secure desktop
-// #define CREDUIWIN_PREPROMPTING              0X00002000  // CredUI is invoked by SspiPromptForCredentials and the client is prompting before a prior handshake
-// #define CREDUIWIN_PACK_32_WOW               0x10000000  // Tell the credential provider it should be packing its Auth Blob 32 bit even though it is running 64 native
+// MessageBox todo
+func MessageBox(hwnd uintptr, caption, title string, flags uint) int {
+	ret, _ := windows.MessageBox(
+		windows.Handle(hwnd),
+		syscall.StringToUTF16Ptr(caption),
+		syscall.StringToUTF16Ptr(title),
+		uint32(flags))
+	return int(ret)
+}
+
+// TaskDialog todo
+func TaskDialog(caption, title string) int {
+	var nButtonPressed int
+	h, _, _ := pGetModuleHandleW.Call(NULL)
+	fmt.Fprintf(os.Stderr, "GetModuleHandleW 0x%08x\n", h)
+	r, _, err := pTaskDialog.Call(
+		uintptr(GetActiveWindow()),
+		uintptr(h), // Mode
+		uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(title))),
+		uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr("Askpass Utility confirm"))), //icon
+		uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(caption))),                   //icon
+		uintptr(TDCBFYESBUTTON|TDCBFOKBUTTON),
+		uintptr(unsafe.Pointer(&nButtonPressed)),
+	)
+	fmt.Fprintf(os.Stderr, "r: %v err: %v\n", r, err)
+	if r == 0 {
+		return 1
+	}
+	if nButtonPressed == IDOK {
+		return 0
+	}
+	return 1
+}
+
+// AskYes todo
+func AskYes(caption, title string) int {
+	// if TaskDialog(caption, title) == IDYES {
+	// 	return 0
+	// }
+	if MessageBox(0, caption, title, windows.MB_YESNO|windows.MB_ICONWARNING) == IDYES {
+		fmt.Fprintf(os.Stdout, "Yes\n")
+		return 0
+	}
+	return 1
+}
 
 // nolint: golint
 // const
@@ -97,6 +131,7 @@ const (
 	CreduiwinSecurePrompt                uint32 = 0x00001000 // The Credui prompt should be displayed on the secure desktop
 	CreduiwinPreprompting                uint32 = 0x00002000 // CredUI is invoked by SspiPromptForCredentials and the client is prompting before a prior handshake
 	CreduiwinPack32WoW                   uint32 = 0x10000000 // Tell the credential provider it should be packing its Auth Blob 32 bit even though it is running 64 native
+	CreduiwinWindowsHello                uint32 = 0x8000000  //Windows Hello credentials will be packed in a smart card auth buffer. This only applies to the face, fingerprint, and PIN credential providers.
 	CredPackProtectedCredentials         uint32 = 0x1
 	CredPackWOWBuffer                    uint32 = 0x2
 	CredPackGenericCredentials           uint32 = 0x4
@@ -119,6 +154,10 @@ type creduiinfow struct {
 	hbmBanner      windows.Handle
 }
 
+// ZeroMemory don't modified
+//go:linkname ZeroMemory runtime.memclrNoHeapPointers
+func ZeroMemory(ptr unsafe.Pointer, n uintptr)
+
 // CredUIPromptForWindowsCredentials modern UI
 func CredUIPromptForWindowsCredentials(prompt, user string) (string, error) {
 	var ci creduiinfow
@@ -128,14 +167,15 @@ func CredUIPromptForWindowsCredentials(prompt, user string) (string, error) {
 	ci.hwnd = GetActiveWindow()
 	ci.hbmBanner = windows.Handle(0)
 	var authPackage uint32
-	cred := make([]uint8, CreduiMaxPasswordLength+1)
+	var cred *byte
+	//cred := make([]uint8, CreduiMaxPasswordLength+1)
 	username := make([]uint16, CreduiMaxUserNameLength+1)
 	passwd := make([]uint16, CreduiMaxPasswordLength+1)
 	ulen := uint32(CreduiMaxUserNameLength + 1)
 	plen := uint32(CreduiMaxPasswordLength + 1)
-	domain := make([]uint16, CreduiMaxPasswordLength+1)
-	dlen := uint32(CreduiMaxUserNameLength + 1)
-	outCredSize := uint32(CreduiMaxPasswordLength)
+	//domain := make([]uint16, CreduiMaxPasswordLength+1)
+	//dlen := uint32(CreduiMaxUserNameLength + 1)
+	var credlen uint32
 	fSave := FALSE
 	r, _, _ := pCredUIPromptForWindowsCredentials.Call(
 		uintptr(unsafe.Pointer(&ci)),
@@ -143,28 +183,28 @@ func CredUIPromptForWindowsCredentials(prompt, user string) (string, error) {
 		uintptr(unsafe.Pointer(&authPackage)),
 		NULL,
 		0,
-		uintptr(unsafe.Pointer(&cred[0])),
-		uintptr(unsafe.Pointer(&outCredSize)),
+		uintptr(unsafe.Pointer(&cred)),
+		uintptr(unsafe.Pointer(&credlen)),
 		uintptr(unsafe.Pointer(&fSave)),
 		uintptr(CreduiwinGeneric),
 	)
 	if r != 0 {
 		return "", fmt.Errorf("CredUIPromptForWindowsCredentials %v", windows.GetLastError())
 	}
-	fmt.Fprintf(os.Stderr, "DEBUG: %d %d\n", outCredSize, authPackage)
 	//https://docs.microsoft.com/en-us/windows/win32/api/wincred/nf-wincred-credunpackauthenticationbufferw
 	r, _, _ = pCredUnPackAuthenticationBuffer.Call(
 		uintptr(0),
-		uintptr(unsafe.Pointer(&cred[0])),
-		uintptr(outCredSize),
+		uintptr(unsafe.Pointer(cred)),
+		uintptr(credlen),
 		uintptr(unsafe.Pointer(&username[0])),
 		uintptr(unsafe.Pointer(&ulen)),
-		uintptr(unsafe.Pointer(&domain[0])),
-		uintptr(unsafe.Pointer(&dlen)),
+		NULL,
+		NULL,
 		uintptr(unsafe.Pointer(&passwd[0])),
 		uintptr(unsafe.Pointer(&plen)),
 	)
-	fmt.Fprintf(os.Stderr, "%v\n%v\n%v\nr %d\n", cred, username, passwd, r)
+	ZeroMemory(unsafe.Pointer(cred), uintptr(credlen))
+	windows.CoTaskMemFree(unsafe.Pointer(cred))
 	if r == FALSE {
 		return "", fmt.Errorf("CredUnPackAuthenticationBuffer %v", windows.GetLastError())
 	}
@@ -217,11 +257,11 @@ func CredUIPromptForCredentials(prompt, user string) (string, error) {
 
 // AskPassword todo
 func AskPassword(caption, title string) int {
-	passwd, err := CredUIPromptForCredentials(caption, title)
+	passwd, err := CredUIPromptForWindowsCredentials(caption, title)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Credentials: %s\n", err)
 		return 1
 	}
 	fmt.Fprintf(os.Stdout, "%s\n", passwd)
-	return 1
+	return 0
 }
