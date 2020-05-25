@@ -38,7 +38,7 @@ func ReadPassword(prompt string) (string, error) {
 
 // MakeRaw todo
 func MakeRaw(fd *os.File) (*terminal.State, error) {
-	if isatty.IsTerminal(fd) {
+	if IsTerminal(fd) {
 		return terminal.MakeRaw(int(fd.Fd()))
 	}
 	return nil, errors.New("not terminal")

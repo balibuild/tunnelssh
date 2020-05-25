@@ -265,8 +265,8 @@ func CredUIPromptForCredentials(prompt, user string) (string, error) {
 // Credui.dll
 
 // AskPassword todo
-func AskPassword(caption, title string) int {
-	passwd, err := CredUIPromptForWindowsCredentials(caption, title)
+func AskPassword(caption, user string) int {
+	passwd, err := CredUIPromptForWindowsCredentials(caption, user)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Credentials: %s\n", err)
 		return 1
