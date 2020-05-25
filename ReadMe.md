@@ -21,4 +21,4 @@ TunnelSSH ssh-askpass:
 
 ## Develop
 
-Please note that because ssh-askpass needs to link the application manifest to support TaskDialog, this tool needs to be built with [bali](https://github.com/balibuild/bali).
+Note that because ssh-askpass needs to link the application **manifest** to support **TaskDialog**, [bali](https://github.com/balibuild/bali) needs to be used to build tunnelssh.
