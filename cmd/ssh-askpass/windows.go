@@ -9,20 +9,23 @@ import (
 	"unicode/utf16"
 	"unsafe"
 
+	"github.com/balibuild/tunnelssh/cli"
 	"golang.org/x/sys/windows"
 )
 
 var (
-	kernel32                           = syscall.NewLazyDLL("kernel32.dll")
-	user32                             = syscall.NewLazyDLL("user32.dll")
-	credui                             = syscall.NewLazyDLL("Credui.dll")
-	comctl32                           = syscall.NewLazyDLL("comctl32.dll")
-	pGetModuleHandleW                  = kernel32.NewProc("GetModuleHandleW")
-	pGetActiveWindow                   = user32.NewProc("GetActiveWindow")
-	pCredUIPromptForCredentialsW       = credui.NewProc("CredUIPromptForCredentialsW")
-	pCredUIPromptForWindowsCredentials = credui.NewProc("CredUIPromptForWindowsCredentialsW")
-	pCredUnPackAuthenticationBuffer    = credui.NewProc("CredUnPackAuthenticationBufferW")
-	pTaskDialog                        = comctl32.NewProc("TaskDialog")
+	kernel32                            = syscall.NewLazyDLL("kernel32.dll")
+	user32                              = syscall.NewLazyDLL("user32.dll")
+	credui                              = syscall.NewLazyDLL("Credui.dll")
+	comctl32                            = syscall.NewLazyDLL("comctl32.dll")
+	pGetModuleHandleW                   = kernel32.NewProc("GetModuleHandleW")
+	pGetActiveWindow                    = user32.NewProc("GetActiveWindow")
+	pCredUIPromptForCredentialsW        = credui.NewProc("CredUIPromptForCredentialsW")
+	pCredUIPromptForWindowsCredentialsW = credui.NewProc("CredUIPromptForWindowsCredentialsW")
+	pCredUICmdLinePromptForCredentialsW = credui.NewProc("CredUICmdLinePromptForCredentialsW")
+	pCredPackAuthenticationBufferW      = credui.NewProc("CredPackAuthenticationBufferW")
+	pCredUnPackAuthenticationBufferW    = credui.NewProc("CredUnPackAuthenticationBufferW")
+	pTaskDialog                         = comctl32.NewProc("TaskDialog")
 )
 
 // defined
@@ -166,25 +169,23 @@ type creduiinfow struct {
 func ZeroMemory(ptr unsafe.Pointer, n uintptr)
 
 // CredUIPromptForWindowsCredentials modern UI
+// CredUICmdLinePromptForCredentials is xx
 func CredUIPromptForWindowsCredentials(prompt, user string) (string, error) {
 	var ci creduiinfow
 	ci.cbSize = uint32(unsafe.Sizeof(ci))
 	ci.pszCaptionText = syscall.StringToUTF16Ptr("Askpass Utility for TunnelSSH")
-	ci.pszMessageText = syscall.StringToUTF16Ptr(prompt)
+	ci.pszMessageText = syscall.StringToUTF16Ptr(cli.StrCat(prompt, "\nEnter username '", user, "'"))
 	ci.hwnd = GetActiveWindow()
 	ci.hbmBanner = windows.Handle(0)
 	var authPackage uint32
 	var cred *byte
-	//cred := make([]uint8, CreduiMaxPasswordLength+1)
 	username := make([]uint16, CreduiMaxUserNameLength+1)
 	passwd := make([]uint16, CreduiMaxPasswordLength+1)
 	ulen := uint32(CreduiMaxUserNameLength + 1)
 	plen := uint32(CreduiMaxPasswordLength + 1)
-	//domain := make([]uint16, CreduiMaxPasswordLength+1)
-	//dlen := uint32(CreduiMaxUserNameLength + 1)
 	var credlen uint32
 	fSave := FALSE
-	r, _, _ := pCredUIPromptForWindowsCredentials.Call(
+	r, _, _ := pCredUIPromptForWindowsCredentialsW.Call(
 		uintptr(unsafe.Pointer(&ci)),
 		0,
 		uintptr(unsafe.Pointer(&authPackage)),
@@ -198,8 +199,10 @@ func CredUIPromptForWindowsCredentials(prompt, user string) (string, error) {
 	if r != 0 {
 		return "", fmt.Errorf("CredUIPromptForWindowsCredentials %v", windows.GetLastError())
 	}
+	defer ZeroMemory(unsafe.Pointer(cred), uintptr(credlen))
+	defer windows.CoTaskMemFree(unsafe.Pointer(cred))
 	//https://docs.microsoft.com/en-us/windows/win32/api/wincred/nf-wincred-credunpackauthenticationbufferw
-	r, _, _ = pCredUnPackAuthenticationBuffer.Call(
+	r, _, _ = pCredUnPackAuthenticationBufferW.Call(
 		uintptr(0),
 		uintptr(unsafe.Pointer(cred)),
 		uintptr(credlen),
@@ -210,8 +213,6 @@ func CredUIPromptForWindowsCredentials(prompt, user string) (string, error) {
 		uintptr(unsafe.Pointer(&passwd[0])),
 		uintptr(unsafe.Pointer(&plen)),
 	)
-	ZeroMemory(unsafe.Pointer(cred), uintptr(credlen))
-	windows.CoTaskMemFree(unsafe.Pointer(cred))
 	if r == FALSE {
 		return "", fmt.Errorf("CredUnPackAuthenticationBuffer %v", windows.GetLastError())
 	}
