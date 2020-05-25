@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -57,19 +56,6 @@ func readAskPass(prompt, user string, passwd bool) (string, error) {
 		return "", err
 	}
 	return ln, nil
-}
-
-// AskPrompt todo
-func AskPrompt(prompt string) (string, error) {
-	if pty.IsTerminal(os.Stdin) {
-		fmt.Fprintf(os.Stderr, "%s: ", prompt)
-		respond, err := pty.ReadInputEx(os.Stdin)
-		if err != nil {
-			return "", err
-		}
-		return string(respond), nil
-	}
-	return readAskPass(prompt, "", false)
 }
 
 // AskPassword todo

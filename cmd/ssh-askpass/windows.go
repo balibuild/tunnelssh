@@ -98,6 +98,7 @@ func TaskDialog(caption, title string) int {
 
 // AskYes todo
 func AskYes(caption, title string) int {
+	//pressed := MessageBox(uintptr(GetActiveWindow()), caption, title, windows.MB_YESNO|windows.MB_ICONWARNING)
 	pressed := TaskDialog(caption, title)
 	if pressed == IDYES {
 		fmt.Fprintf(os.Stdout, "Yes\n")
