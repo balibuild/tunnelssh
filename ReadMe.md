@@ -19,3 +19,6 @@ TunnelSSH ssh-askpass:
 
 ![](./docs/images/ssh-askpass.png)
 
+## Develop
+
+Please note that because ssh-askpass needs to link the application manifest to support TaskDialog, this tool needs to be built with [bali](https://github.com/balibuild/bali).

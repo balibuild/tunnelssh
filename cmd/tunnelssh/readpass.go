@@ -53,6 +53,9 @@ func readAskPass(prompt, user string, passwd bool) (string, error) {
 		return "", err
 	}
 	ln = strings.TrimSuffix(ln, "\r")
+	if err := cmd.Wait(); err != nil {
+		return "", err
+	}
 	return ln, nil
 }
 

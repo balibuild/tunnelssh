@@ -61,40 +61,47 @@ func MessageBox(hwnd uintptr, caption, title string, flags uint) int {
 	return int(ret)
 }
 
-// TaskDialog todo
+// HresultOK todo
+// HRESULT 0 -1 success
+func HresultOK(i int) bool {
+	return i == 0 || i == -1
+}
+
+// MakeIntreSource todo
+func MakeIntreSource(i int) uintptr {
+	return uintptr(uint16(i))
+}
+
+// TaskDialog impl
+// Must use bali build it
 func TaskDialog(caption, title string) int {
 	var nButtonPressed int
 	h, _, _ := pGetModuleHandleW.Call(NULL)
-	fmt.Fprintf(os.Stderr, "GetModuleHandleW 0x%08x\n", h)
-	r, _, err := pTaskDialog.Call(
+	r, _, _ := pTaskDialog.Call(
 		uintptr(GetActiveWindow()),
 		uintptr(h), // Mode
 		uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(title))),
 		uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr("Askpass Utility Confirm"))), //icon
 		uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(caption))),                   //icon
-		uintptr(TDCBFYESBUTTON|TDCBFOKBUTTON),
+		uintptr(TDCBFYESBUTTON|TDCBFNOBUTTON),
+		MakeIntreSource(-1), //WARNING ICON
 		uintptr(unsafe.Pointer(&nButtonPressed)),
 	)
-	fmt.Fprintf(os.Stderr, "r: %v err: %v\n", r, err)
-	if r == 0 {
-		return 1
+	if !HresultOK(int(r)) {
+		return -1
 	}
-	if nButtonPressed == IDOK {
-		return 0
-	}
-	return 1
+	return nButtonPressed
 }
 
 // AskYes todo
 func AskYes(caption, title string) int {
-	// if TaskDialog(caption, title) == IDYES {
-	// 	return 0
-	// }
-	if MessageBox(0, caption, title, windows.MB_YESNO|windows.MB_ICONWARNING) == IDYES {
+	pressed := TaskDialog(caption, title)
+	if pressed == IDYES {
 		fmt.Fprintf(os.Stdout, "Yes\n")
-		return 0
+	} else {
+		fmt.Fprintf(os.Stdout, "No\n")
 	}
-	return 1
+	return 0
 }
 
 // nolint: golint
