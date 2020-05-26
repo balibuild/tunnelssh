@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"net"
 	"os"
 	"os/signal"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -34,6 +36,8 @@ type SSHClient struct {
 	v6                  bool
 	serverAliveInterval int
 	connectTimeout      int
+	sys                 *sysInfo
+	wg                  sync.WaitGroup
 }
 
 // error
@@ -79,6 +83,47 @@ func (sc *SSHClient) WatchSignals() chan os.Signal {
 	return sigC
 }
 
+type windowChangeReq struct {
+	W, H, Wpx, Hpx uint32
+}
+
+func (sc *SSHClient) invokeResizeTerminal(ctx context.Context) {
+	ch := sc.watchTerminalResize(ctx)
+	sc.wg.Add(1)
+	go func() {
+		defer sc.wg.Done()
+		w, h, err := pty.GetWinSize()
+		if err != nil {
+			DebugPrint("failed get windows size %v", err)
+		}
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case _, ok := <-ch:
+				if !ok {
+					return
+				}
+			}
+			nw, nh, err := pty.GetWinSize()
+			if err != nil {
+				continue
+			}
+			if nw == w && nh == h {
+				continue
+			}
+			_, err = sc.sess.SendRequest("window-change", false, ssh.Marshal(
+				windowChangeReq{W: uint32(nw), H: uint32(nh)},
+			))
+			if err != nil {
+				continue
+			}
+			w = nw
+			h = nh
+		}
+	}()
+}
+
 // RunInteractive to open a shell
 func (sc *SSHClient) RunInteractive() error {
 	DebugPrint("ssh shell mode. host: %s", sc.host)
@@ -90,8 +135,11 @@ func (sc *SSHClient) RunInteractive() error {
 		if err != nil {
 			return err
 		}
-		if termstate, err := terminal.MakeRaw(int(os.Stdin.Fd())); err == nil {
-			defer terminal.Restore(int(os.Stdin.Fd()), termstate)
+		if termstate, err := terminal.MakeRaw(int(os.Stdout.Fd())); err == nil {
+			defer terminal.Restore(int(os.Stdout.Fd()), termstate)
+		}
+		if termstate, err := terminal.MakeRaw(int(os.Stderr.Fd())); err == nil {
+			defer terminal.Restore(int(os.Stderr.Fd()), termstate)
 		}
 		modes := ssh.TerminalModes{
 			ssh.ECHO:          0,
@@ -106,7 +154,27 @@ func (sc *SSHClient) RunInteractive() error {
 	if err := sc.sess.Shell(); err != nil {
 		return err
 	}
-	return sc.sess.Wait()
+	if err := sc.changeLocalTerminalMode(); err != nil {
+		return err
+	}
+	sigC := sc.WatchSignals()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer func() {
+		signal.Stop(sigC)
+		cancel()
+		sc.wg.Wait()
+	}()
+	sc.invokeResizeTerminal(ctx)
+	sessC := make(chan error)
+	go func() {
+		sessC <- sc.sess.Wait()
+	}()
+	select {
+	case <-sigC:
+		return ErrGotSignal
+	case err := <-sessC:
+		return err
+	}
 }
 
 // Loop todo
