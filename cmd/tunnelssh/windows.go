@@ -11,22 +11,6 @@ import (
 	"github.com/balibuild/winio"
 )
 
-// MakeAgent make agent
-// Windows use pipe now
-// https://github.com/PowerShell/openssh-portable/blob/latestw_all/contrib/win32/win32compat/ssh-agent/agent.c#L40
-func (ka *KeyAgent) MakeAgent() error {
-	if len(os.Getenv("SSH_AUTH_SOCK")) == 0 {
-		return cli.ErrorCat("ssh agent not initialized")
-	}
-	// \\\\.\\pipe\\openssh-ssh-agent
-	conn, err := winio.DialPipe("\\\\.\\pipe\\openssh-ssh-agent", nil)
-	if err != nil {
-		return err
-	}
-	ka.conn = conn
-	return nil
-}
-
 // const
 const (
 	EnableVirtualTerminalProcessingMode = 0x4
@@ -46,3 +30,21 @@ func init() {
 		procSetConsoleMode.Call(h, uintptr(mode|EnableVirtualTerminalProcessingMode))
 	}
 }
+
+// MakeAgent make agent
+// Windows use pipe now
+// https://github.com/PowerShell/openssh-portable/blob/latestw_all/contrib/win32/win32compat/ssh-agent/agent.c#L40
+func (ka *KeyAgent) MakeAgent() error {
+	if len(os.Getenv("SSH_AUTH_SOCK")) == 0 {
+		return cli.ErrorCat("ssh agent not initialized")
+	}
+	// \\\\.\\pipe\\openssh-ssh-agent
+	conn, err := winio.DialPipe("\\\\.\\pipe\\openssh-ssh-agent", nil)
+	if err != nil {
+		return err
+	}
+	ka.conn = conn
+	return nil
+}
+
+// resize console https://docs.microsoft.com/en-us/windows/console/console-winevents

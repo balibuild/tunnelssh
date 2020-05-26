@@ -234,11 +234,11 @@ func main() {
 	}
 	defer sc.Close()
 	if err := sc.Loop(); err != nil {
+		sc.onFinal(err)
 		switch err.(type) {
 		case *ssh.ExitError:
 			os.Exit(err.(*ssh.ExitError).ExitStatus())
 		default:
-			fmt.Fprintf(os.Stderr, "Loop %s: %s\n", sc.host, err)
 		}
 		os.Exit(1)
 	}

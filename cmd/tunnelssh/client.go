@@ -1,10 +1,13 @@
 package main
 
 import (
+	"errors"
 	"net"
 	"os"
+	"os/signal"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/balibuild/tunnelssh/cli"
@@ -33,6 +36,30 @@ type SSHClient struct {
 	connectTimeout      int
 }
 
+// error
+var (
+	ErrGotSignal = errors.New("got signal")
+)
+
+func (sc *SSHClient) onFinal(err error) {
+	if err == nil {
+		DebugPrint("ssh connetion to %s successfully", sc.host)
+		return
+	}
+	if err == ErrGotSignal {
+		DebugPrint("received signal, terminated")
+		return
+	}
+	switch e := err.(type) {
+	case *ssh.ExitMissingError:
+		DebugPrint("ssh connetion to %s but remote didn't send exit status: %s", sc.host, e)
+	case *ssh.ExitError:
+		DebugPrint("ssh connetion to %s with error: %s", sc.host, err)
+	default:
+		DebugPrint("ssh connetion to %s with unknown error: %s", sc.host, err)
+	}
+}
+
 // SendEnv todo
 func (sc *SSHClient) SendEnv() error {
 	if len(sc.env) == 0 {
@@ -43,6 +70,13 @@ func (sc *SSHClient) SendEnv() error {
 		sc.sess.Setenv(k, v)
 	}
 	return nil
+}
+
+// WatchSignals todo
+func (sc *SSHClient) WatchSignals() chan os.Signal {
+	sigC := make(chan os.Signal, 1)
+	signal.Notify(sigC, os.Interrupt, syscall.SIGHUP, syscall.SIGTERM, syscall.SIGQUIT)
+	return sigC
 }
 
 // RunInteractive to open a shell
@@ -86,8 +120,21 @@ func (sc *SSHClient) Loop() error {
 	sc.sess.Stdin = os.Stdin
 	// git escape argv done
 	args := strings.Join(sc.argv, " ")
+	sigC := sc.WatchSignals()
+	defer func() {
+		signal.Stop(sigC)
+	}()
 	DebugPrint("cmd: %s", args)
-	return sc.sess.Run(args)
+	sessC := make(chan error)
+	go func() {
+		sessC <- sc.sess.Run(args)
+	}()
+	select {
+	case <-sigC:
+		return ErrGotSignal
+	case err := <-sessC:
+		return err
+	}
 }
 
 // DialTunnel todo
