@@ -130,6 +130,7 @@ func (sc *SSHClient) RunInteractive() error {
 	sc.sess.Stdout = os.Stdout
 	sc.sess.Stderr = os.Stderr
 	sc.sess.Stdin = os.Stdin
+	sc.sys = &sysInfo{}
 	if sc.mode == TerminalModeForce {
 		x, y, err := pty.GetWinSize()
 		if err != nil {
