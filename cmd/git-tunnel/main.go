@@ -66,7 +66,7 @@ func (o *option) Invoke(val int, oa, raw string) error {
 // ParseArgv todo
 func ParseArgv() ([]string, error) {
 	var o option
-	var ae cli.ArgvParser
+	ae := &cli.ArgvParser{SubcmdMode: true}
 	ae.Add("help", cli.NOARG, 'h')
 	ae.Add("version", cli.NOARG, 'v')
 	ae.Add("verbose", cli.NOARG, 'V')
