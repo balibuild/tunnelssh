@@ -5,7 +5,6 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"io"
 	"os"
 	"strings"
 	"syscall"
@@ -162,13 +161,23 @@ func AskYesConsole(caption, title string) int {
 	defer in.Close()
 	fmt.Fprintf(os.Stderr, "%s", caption)
 	br := bufio.NewReader(in)
-	ln, err := br.ReadString('\n')
-	if err != nil && err != io.EOF {
-		return 1
+	for {
+		answer, err := br.ReadString('\n')
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "unable read string %v", err)
+			return 1
+		}
+		answer = strings.ToLower(strings.TrimSpace(answer))
+		if answer == "yes" {
+			fmt.Fprintf(os.Stdout, "yes")
+			return 0
+		}
+		if answer == "no" {
+			fmt.Fprintf(os.Stdout, "no")
+			return 0
+		}
+		fmt.Fprintf(os.Stderr, "Please type 'yes' or 'no': ")
 	}
-	ln = strings.TrimSpace(ln)
-	fmt.Fprintf(os.Stdout, "%s\n", ln)
-	return 0
 }
 
 // AskYes todo
