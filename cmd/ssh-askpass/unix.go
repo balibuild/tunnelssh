@@ -19,6 +19,7 @@ const (
 	ttypath string = "/dev/tty"
 )
 
+// AskYes todo
 func AskYes(caption, title string) int {
 	ttyin, err := os.OpenFile(ttypath, os.O_RDONLY, 0)
 	if err != nil {
@@ -45,7 +46,6 @@ func AskYes(caption, title string) int {
 		}
 		fmt.Fprintf(os.Stderr, "Please type 'yes' or 'no': ")
 	}
-	return 0
 }
 
 // AskPassword todo

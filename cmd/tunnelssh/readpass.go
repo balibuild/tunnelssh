@@ -63,5 +63,6 @@ func (sc *SSHClient) AskPassword() (string, error) {
 	if pty.IsTerminal(os.Stdin) {
 		return pty.ReadPassword("Password")
 	}
-	return readAskPass(cli.StrCat("TunnelSSH connect to ", sc.config.User, "@", sc.host, " password: "), sc.config.User, true)
+	prompt := cli.StrCat("Enter your credentials for ", sc.config.User, "@", sc.host)
+	return readAskPass(prompt, sc.config.User, true)
 }
