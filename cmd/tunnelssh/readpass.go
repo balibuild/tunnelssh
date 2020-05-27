@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -30,6 +31,7 @@ const (
 func readAskPass(prompt, user string, passwd bool) (string, error) {
 	exe, err := os.Executable()
 	if err != nil {
+		fmt.Fprintf(os.Stderr, "%v", err)
 		return "", err
 	}
 	askpass := filepath.Join(filepath.Dir(exe), "ssh-askpass")
@@ -40,19 +42,22 @@ func readAskPass(prompt, user string, passwd bool) (string, error) {
 		cmd.Args = append(cmd.Args, prompt)
 	}
 	cmd.Stderr = os.Stderr //bind stderr
-	in, err := cmd.StdoutPipe()
+	out, err := cmd.StdoutPipe()
 	if err != nil {
+		DebugPrint("read askpass StdoutPipe %v", err)
 		return "", err
 	}
-	defer in.Close()
-	br := bufio.NewReader(in)
+	defer out.Close()
+	br := bufio.NewReader(out)
 	cmd.Start()
 	ln, err := br.ReadString('\n')
 	if err != nil && err != io.EOF {
+		DebugPrint("read askpass ReadString %v", err)
 		return "", err
 	}
-	ln = strings.TrimSuffix(ln, "\r")
+	ln = strings.TrimSpace(ln)
 	if err := cmd.Wait(); err != nil {
+		DebugPrint("read askpass Wait %v", err)
 		return "", err
 	}
 	return ln, nil
