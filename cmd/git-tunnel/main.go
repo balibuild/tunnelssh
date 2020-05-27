@@ -98,8 +98,10 @@ func main() {
 	cmd.Stdin = os.Stdin
 
 	if err := cmd.Run(); err != nil {
-
-	}
-	if err := cmd.Wait(); err != nil {
+		if cmd.ProcessState.Exited() {
+			os.Exit(cmd.ProcessState.ExitCode())
+		}
+		fmt.Fprintf(os.Stderr, "%v\n", err)
+		os.Exit(1)
 	}
 }
