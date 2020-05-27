@@ -90,6 +90,46 @@ func MakeIntreSource(i int) uintptr {
 	return uintptr(uint16(i))
 }
 
+// typedef struct _TASKDIALOG_BUTTON
+// {
+//     int     nButtonID;
+//     PCWSTR  pszButtonText;
+// } TASKDIALOG_BUTTON;
+
+type taskButton struct {
+	nButtonID     int
+	pszButtonText *uint16
+}
+
+type taskDialogConfig struct {
+	cbSize                  uint
+	hwnd                    windows.Handle
+	hInst                   windows.Handle
+	dwFlags                 int
+	dwCommonButtons         int
+	pszWindowTitle          *uint16
+	pszMainIcon             *uint16
+	pszMainInstruction      *uint16
+	pszContent              *uint16
+	cButtons                int
+	pButtons                *taskButton
+	nDefaultButton          int
+	cRadioButtons           uint
+	nDefaultRadioButton     *taskButton
+	pszVerificationText     *uint16
+	pszExpandedInformation  *uint16
+	pszExpandedControlText  *uint16
+	pszCollapsedControlText *uint16
+	pszFooterIcon           *uint16
+	pszFooter               *uint16
+	pfCallback              uintptr
+	lpCallbackData          uintptr
+	cxWidth                 uint
+}
+
+//HRESULT WINAPI TaskDialogIndirect(_In_ const TASKDIALOGCONFIG *pTaskConfig,
+//_Out_opt_ int *pnButton, _Out_opt_ int *pnRadioButton, _Out_opt_ BOOL *pfVerificationFlagChecked);
+
 // TaskDialog impl
 // Must use bali build it
 func TaskDialog(caption, title string) int {
