@@ -54,11 +54,12 @@ func askAddingUnknownHostKey(address string, remote net.Addr, key ssh.PublicKey)
 		case <-stopC:
 		}
 	}()
-
-	fmt.Fprintf(os.Stderr, "The authenticity of host '%s (%s)' can't be established.\n", address, remote.String())
-	fmt.Fprintf(os.Stderr, "%s key fingerprint is %s\n", keyTypeName(key), ssh.FingerprintSHA256(key))
-	fmt.Fprintf(os.Stderr, "Are you sure you want to continue connecting (yes/no)? ")
+	msg := fmt.Sprintf("The authenticity of host '%s (%s)' can't be established.\n%s key fingerprint is %s\nAre you sure you want to continue connecting (yes/no)? ",
+		address, remote.String(),
+		keyTypeName(key),
+		ssh.FingerprintSHA256(key))
 	if pty.IsTerminal(os.Stdin) {
+		_, _ = os.Stderr.WriteString(msg)
 		b := bufio.NewReader(os.Stdin)
 		for {
 			answer, err := b.ReadString('\n')
@@ -74,7 +75,7 @@ func askAddingUnknownHostKey(address string, remote net.Addr, key ssh.PublicKey)
 			fmt.Print("Please type 'yes' or 'no': ")
 		}
 	}
-	answer, err := readAskPass("Are you sure you want to continue connecting (yes/no)? ", "", false)
+	answer, err := readAskPass(msg, "", false)
 	if err != nil {
 		return false, err
 	}

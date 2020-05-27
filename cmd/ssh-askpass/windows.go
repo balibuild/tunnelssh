@@ -3,14 +3,24 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
+	"io"
 	"os"
+	"strings"
 	"syscall"
 	"unicode/utf16"
 	"unsafe"
 
 	"github.com/balibuild/tunnelssh/cli"
+	"github.com/mattn/go-isatty"
 	"golang.org/x/sys/windows"
+)
+
+const (
+	errorAccessDenied     syscall.Errno = 5
+	errorInvalidHandle    syscall.Errno = 6
+	errorInvalidParameter syscall.Errno = 87
 )
 
 var (
@@ -26,6 +36,12 @@ var (
 	pCredPackAuthenticationBufferW      = credui.NewProc("CredPackAuthenticationBufferW")
 	pCredUnPackAuthenticationBufferW    = credui.NewProc("CredUnPackAuthenticationBufferW")
 	pTaskDialog                         = comctl32.NewProc("TaskDialog")
+	pGetConsoleMode                     = kernel32.NewProc("GetConsoleMode")
+	pSetConsoleMode                     = kernel32.NewProc("SetConsoleMode")
+	pGetConsoleScreenBufferInfo         = kernel32.NewProc("GetConsoleScreenBufferInfo")
+	pReadConsoleInput                   = kernel32.NewProc("ReadConsoleInputW")
+	pAttachConsole                      = kernel32.NewProc("AttachConsole")
+	pAllocConsole                       = kernel32.NewProc("AllocConsole")
 )
 
 // defined
@@ -96,8 +112,70 @@ func TaskDialog(caption, title string) int {
 	return nButtonPressed
 }
 
+const (
+	conin  string = "CONIN$"
+	conout string = "CONOUT$"
+)
+
+func attachConsole(pid uint32) (err error) {
+	r1, _, e1 := syscall.Syscall(pAttachConsole.Addr(), 1, uintptr(pid), 0, 0)
+	if r1 == 0 {
+		if e1 != 0 {
+			err = error(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+
+	return
+
+}
+
+func allocConsole() (err error) {
+	r1, _, e1 := syscall.Syscall(pAllocConsole.Addr(), 0, 0, 0, 0)
+	if r1 == 0 {
+		if e1 != 0 {
+			err = error(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+
+	return
+}
+
+// AskYesConsole todo
+func AskYesConsole(caption, title string) int {
+	err := attachConsole(uint32(os.Getpid()))
+	if err != nil && err == error(errorInvalidHandle) {
+		err = allocConsole()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "allocConsole %v\n", err)
+			return 1
+		}
+	}
+	in, err := os.OpenFile(conin, os.O_RDONLY, 0)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "unable open CONIN$ %v\n", err)
+		return 1
+	}
+	defer in.Close()
+	fmt.Fprintf(os.Stderr, "%s", caption)
+	br := bufio.NewReader(in)
+	ln, err := br.ReadString('\n')
+	if err != nil && err != io.EOF {
+		return 1
+	}
+	ln = strings.TrimSpace(ln)
+	fmt.Fprintf(os.Stdout, "%s\n", ln)
+	return 0
+}
+
 // AskYes todo
 func AskYes(caption, title string) int {
+	if isatty.IsTerminal(os.Stderr.Fd()) {
+		return AskYesConsole(caption, title)
+	}
 	//pressed := MessageBox(uintptr(GetActiveWindow()), caption, title, windows.MB_YESNO|windows.MB_ICONWARNING)
 	pressed := TaskDialog(caption, title)
 	if pressed == IDYES {
