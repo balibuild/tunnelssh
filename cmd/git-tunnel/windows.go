@@ -3,12 +3,14 @@
 package main
 
 import (
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 
 	"github.com/balibuild/tunnelssh/cli"
+	"github.com/balibuild/tunnelssh/tunnel"
 	"golang.org/x/sys/windows/registry"
 )
 
@@ -68,5 +70,16 @@ func InitializeEnv() error {
 	os.Setenv("PATH", strings.Join(pvv, ";"))
 	os.Setenv("GIT_SSH", "tunnelssh.exe")
 	os.Setenv("GIT_SSH_VARIANT", "ssh")
+
+	// to support git over HTTP proxy
+	if ps, err := tunnel.ResolveRegistryProxy(); err == nil {
+		srv := ps.ProxyServer
+		if _, err := url.Parse(srv); err != nil {
+			srv = cli.StrCat("http://", srv)
+		}
+		os.Setenv("HTTP_PROXY", srv)
+		os.Setenv("HTTPS_PROXY", srv)
+		os.Setenv("NO_PROXY", ps.ProxyOverride)
+	}
 	return nil
 }
