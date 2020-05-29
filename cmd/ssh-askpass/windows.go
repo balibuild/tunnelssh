@@ -4,6 +4,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/binary"
 	"fmt"
 	"os"
 	"strings"
@@ -110,11 +111,29 @@ func MakeIntreSource(i int) uintptr {
 	return uintptr(uint16(i))
 }
 
-// typedef struct _TASKDIALOG_BUTTON
-// {
-//     int     nButtonID;
-//     PCWSTR  pszButtonText;
-// } TASKDIALOG_BUTTON;
+// PutUint32 todo
+func PutUint32(b []byte, v uint32) int {
+	_ = b[3] // early check
+	b[0] = byte(v)
+	b[1] = byte(v >> 8)
+	b[2] = byte(v >> 16)
+	b[3] = byte(v >> 24)
+	return 4
+} // assume it's littleEndian
+
+// PutPtr todo
+func PutPtr(b []byte, v uintptr) int {
+	if unsafe.Sizeof(v) == 8 {
+		binary.PutUvarint(b, uint64(v))
+		return 8
+	}
+
+	return PutUint32(b, uint32(v))
+} // assume it's littleEndian
+
+const (
+	helpLink = "For more information about this tool. \nVisit: <a href=\"https://github.com/balibuild/tunnelssh\">TunnelSSH</a>\nVisit: <a href=\"https://forcemz.net/\">forcemz.net</a>"
+)
 
 type taskButton struct {
 	nButtonID     int
@@ -135,7 +154,7 @@ type taskDialogConfig struct {
 	pButtons                uintptr
 	nDefaultButton          int32
 	cRadioButtons           uint32
-	pDefaultRadioButton     uintptr
+	pRadioButtons           uintptr
 	nDefaultRadioButton     int32
 	pszVerificationText     *uint16
 	pszExpandedInformation  *uint16
@@ -157,35 +176,53 @@ func taskdialogcallback(hwnd windows.Handle, msg uint, wParam uintptr, lParam, l
 
 //TaskDialogIndirect todo
 func TaskDialogIndirect(caption, title string) int {
-	var tc taskDialogConfig
-	var nButton, nRadioButton int
-	tc.cbSize = uint32(unsafe.Sizeof(tc))
-	fmt.Fprintf(os.Stderr, "%d \n", tc.cbSize)
-	tc.hwndParent = uintptr(GetActiveWindow())
+	buf := make([]byte, 200)
+	var tl int
+	var nButton, nRadioButton, pfVerificationFlagChecked int
+	tl += 4                                            // cbSize
+	tl += PutPtr(buf[tl:], uintptr(GetActiveWindow())) //hwndParent
 	h, _, _ := pGetModuleHandleW.Call(NULL)
-	tc.hInst = h
-	tc.pszWindowTitle = syscall.StringToUTF16Ptr(title)
-	tc.pszContent = syscall.StringToUTF16Ptr(caption)
-	tc.dwFlags = TDFALLOWDIALOGCANCELLATION | TDFPOSITIONRELATIVETOWINDOW | TDFSIZETOCONTENT
-	tc.pszCollapsedControlText = syscall.StringToUTF16Ptr("More information")
-	tc.pszExpandedControlText = syscall.StringToUTF16Ptr("Less information")
-	tc.pszMainIcon = MakeIntreSource(-3)
-	tc.pfCallback = syscall.NewCallback(taskdialogcallback)
-	r, _, _ := pTaskDialogIndirect.Call(
-		uintptr(unsafe.Pointer(&tc)),
+	tl += PutPtr(buf[tl:], uintptr(h))                                                                         //hInst
+	tl += PutUint32(buf[tl:], uint32(TDFALLOWDIALOGCANCELLATION|TDFPOSITIONRELATIVETOWINDOW|TDFSIZETOCONTENT)) //dwFlags
+	tl += 4                                                                                                    //dwCommonButtons                                                                                             // common button
+	tl += PutPtr(buf[tl:], uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(title))))                           //pszWindowTitle
+	tl += PutPtr(buf[tl:], uintptr(0))                                                                         //pszMainIcon
+	tl += PutPtr(buf[tl:], uintptr(0))                                                                         //pszMainInstruction
+	tl += PutPtr(buf[tl:], uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(caption))))                         //pszContent
+	tl += 4                                                                                                    //cButtons
+	tl += PutPtr(buf[tl:], 0)                                                                                  //pButtons
+	tl += 4                                                                                                    //nDefaultButton
+	tl += 4                                                                                                    //cRadioButtons
+	tl += PutPtr(buf[tl:], 0)                                                                                  //pRadioButtons
+	tl += 4                                                                                                    //nDefaultRadioButton
+	tl += PutPtr(buf[tl:], 0)                                                                                  //pszVerificationText
+	tl += PutPtr(buf[tl:], uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(helpLink))))                        //pszExpandedInformation
+	tl += PutPtr(buf[tl:], uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr("Less information"))))              //pszExpandedControlText
+	tl += PutPtr(buf[tl:], uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr("More information"))))              //pszCollapsedControlText
+	tl += PutPtr(buf[tl:], 0)                                                                                  //pszFooterIcon
+	tl += PutPtr(buf[tl:], 0)                                                                                  //pszFooter
+	callback := syscall.NewCallback(taskdialogcallback)
+	tl += PutPtr(buf[tl:], callback) //pfCallback
+	tl += PutPtr(buf[tl:], 0)        //lpCallbackData
+	tl += 4                          //cxWidth
+	// Final fill cbSize
+	PutUint32(buf, uint32(tl))
+	fmt.Fprintf(os.Stderr, "size: %d %x %x %x %x\n%x\n", tl, uintptr(unsafe.Pointer(&buf[0])),
 		uintptr(unsafe.Pointer(&nButton)),
 		uintptr(unsafe.Pointer(&nRadioButton)),
-		0,
+		uintptr(unsafe.Pointer(&pfVerificationFlagChecked)), buf)
+	r, _, _ := pTaskDialogIndirect.Call(
+		uintptr(unsafe.Pointer(&buf[0])),
+		uintptr(unsafe.Pointer(&nButton)),
+		uintptr(unsafe.Pointer(&nRadioButton)),
+		uintptr(unsafe.Pointer(&pfVerificationFlagChecked)),
 	)
-	fmt.Fprintf(os.Stderr, "%v \n", windows.GetLastError())
+	fmt.Fprintf(os.Stderr, "%v\n", windows.GetLastError())
 	if r != 0 {
 		return IDNO
 	}
 	return int(r)
 }
-
-//HRESULT WINAPI TaskDialogIndirect(_In_ const TASKDIALOGCONFIG *pTaskConfig,
-//_Out_opt_ int *pnButton, _Out_opt_ int *pnRadioButton, _Out_opt_ BOOL *pfVerificationFlagChecked);
 
 // TaskDialog impl
 // Must use bali build it
