@@ -15,7 +15,7 @@ if ($ps.ExitCode -ne 0) {
     Exit $ps.ExitCode
 }
 
-$hash = Get-FileHash *.zip -Algorithm SHA256
+$hash = Get-FileHash "*.zip" -Algorithm SHA256
 $hashtext=$hash.Algorithm + ":" + $hash.Hash.ToLower()
 Write-Host -ForegroundColor Green "$hashtext"
 Write-Host -ForegroundColor Green "build tunnelssh success"
