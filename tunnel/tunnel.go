@@ -37,16 +37,8 @@ func (bm *BoringMachine) Initialize() error {
 	return nil
 }
 
-// DialTimeout auto dial
-func (bm *BoringMachine) DialTimeout(network string, address string, timeout time.Duration) (net.Conn, error) {
-	if bm.Setting == nil || !bm.Setting.UseProxy(address) {
-		conn, err := net.DialTimeout(network, address, timeout)
-		if err != nil {
-			return nil, err
-		}
-		bm.DebugPrint("Establish direct connection %s", address)
-		return conn, nil
-	}
+// DialTunnel todo
+func (bm *BoringMachine) DialTunnel(network string, address string, timeout time.Duration) (net.Conn, error) {
 	proxyurl := bm.Setting.ProxyServer
 	if strings.Index(proxyurl, "://") == -1 {
 		proxyurl = "http://" + proxyurl // avoid proxy url parse failed
@@ -69,6 +61,29 @@ func (bm *BoringMachine) DialTimeout(network string, address string, timeout tim
 	default:
 	}
 	return nil, cli.ErrorCat("not support current scheme", u.Scheme)
+}
+
+// DialDirect todo
+func (bm *BoringMachine) DialDirect(network string, address string, timeout time.Duration) (net.Conn, error) {
+	conn, err := net.DialTimeout(network, address, timeout)
+	if err != nil {
+		return nil, err
+	}
+	bm.DebugPrint("Establish direct connection %s", address)
+	return conn, nil
+}
+
+// DialTimeout auto dial
+func (bm *BoringMachine) DialTimeout(network string, address string, timeout time.Duration) (net.Conn, error) {
+	if bm.Setting == nil || !bm.Setting.UseProxy(address) {
+		return bm.DialDirect(network, address, timeout)
+	}
+	conn, err := bm.DialTunnel(network, address, timeout)
+	if err == nil {
+		return conn, err
+	}
+	bm.DebugPrint("Tunnel cannot establish,try connect direct %s", address)
+	return bm.DialDirect(network, address, timeout)
 }
 
 // Dial todo
