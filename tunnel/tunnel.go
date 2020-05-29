@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"net"
 	"net/url"
+	"os"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/balibuild/tunnelssh/cli"
@@ -63,6 +65,34 @@ func (bm *BoringMachine) DialTunnel(network string, address string, timeout time
 	return nil, cli.ErrorCat("not support current scheme", u.Scheme)
 }
 
+func isProxyOffline(err error) bool {
+	netErr, ok := err.(net.Error)
+	if !ok {
+		return false
+	}
+	if netErr.Timeout() {
+		return true
+	}
+	opErr, ok := netErr.(*net.OpError)
+	if !ok {
+		return false
+	}
+	switch t := opErr.Err.(type) {
+	case *net.DNSError:
+		return false
+	case *os.SyscallError:
+		if errno, ok := t.Err.(syscall.Errno); ok {
+			switch errno {
+			case syscall.ECONNREFUSED:
+				return true
+			case syscall.ETIMEDOUT:
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // DialDirect todo
 func (bm *BoringMachine) DialDirect(network string, address string, timeout time.Duration) (net.Conn, error) {
 	conn, err := net.DialTimeout(network, address, timeout)
@@ -79,10 +109,10 @@ func (bm *BoringMachine) DialTimeout(network string, address string, timeout tim
 		return bm.DialDirect(network, address, timeout)
 	}
 	conn, err := bm.DialTunnel(network, address, timeout)
-	if err == nil {
+	if err == nil && !isProxyOffline(err) {
 		return conn, err
 	}
-	bm.DebugPrint("Tunnel cannot establish,try connect direct %s", address)
+	bm.DebugPrint("Tunnel cannot establish, try connect direct %s", address)
 	return bm.DialDirect(network, address, timeout)
 }
 
