@@ -69,4 +69,5 @@ GO111MODULE=on go get github.com/balibuild/bali/cmd/bali
 echo -e "build TunnelSSH \\x1b[32m${TOPLEVEL}\\x1b[0m"
 cd "$TOPLEVEL"
 bali -z
+sha256sum *.tar.gz
 echo -e "\\x1b[32mbuild TunnelSSH success\\x1b[0m"
