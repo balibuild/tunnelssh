@@ -3,7 +3,6 @@
 package main
 
 import (
-	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -73,12 +72,12 @@ func InitializeEnv() error {
 
 	// to support git over HTTP proxy
 	if ps, err := tunnel.ResolveRegistryProxy(); err == nil {
-		srv := ps.ProxyServer
-		if _, err := url.Parse(srv); err != nil {
-			srv = cli.StrCat("http://", srv)
+		proxyurl := ps.ProxyServer
+		if strings.Index(proxyurl, "://") == -1 {
+			proxyurl = "http://" + proxyurl // avoid proxy url parse failed
 		}
-		os.Setenv("HTTP_PROXY", srv)
-		os.Setenv("HTTPS_PROXY", srv)
+		os.Setenv("HTTP_PROXY", proxyurl)
+		os.Setenv("HTTPS_PROXY", proxyurl)
 		os.Setenv("NO_PROXY", ps.ProxyOverride)
 	}
 	return nil
