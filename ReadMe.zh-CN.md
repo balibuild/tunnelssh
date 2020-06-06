@@ -6,5 +6,11 @@
 
 当企业隔离外网时，只允许特定的机器与外网连接，这个时候，我们可以通过代理经由特定的机器建立连接。在 HTTP 协议中，我们可以使用 [CONNECT](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/CONNECT) 方法建立隧道，从而实现网络的互通。
 
-在 OpenSSH 中，我们可以使用 ProxyCommand 设置让 OpenSSH 客户端经由 Proxy command 建立连接，但配置是固定的，一旦用户网络情况调整，比如关闭代理就需要重新设置，这有一些麻烦，于是我便决定编写 TunnelSSH 解决这个问题。
+在 OpenSSH 中，我们可以使用 ProxyCommand 设置让 OpenSSH 客户端经由 Proxy command 建立连接，但配置是固定的，一旦用户网络情况调整，比如关闭代理就需要重新设置，这有一些麻烦，于是我便决定编写 TunnelSSH 解决这个问题。实际上开发一个全功能的 SSH 客户端稍显麻烦，而 OpenSSH 可以设置 ProxyCommand，因此在 TunnelSSH 中，我们还提供了 necat 命令，当 OpenSSH 通过设置 ProxyCommand 为 netcat 时，netcat 将解决自动按照系统设置建立网络连接。除此之外，在 TunnelSSH 项目中，我们还提供了 TunnelSSH 的 git 包装，SSH AskPass Utility 工具，这就是 TunnelSSH 的基本内容。
+
+## TunnelSSH 介绍
+
+TunnelSSH 既是此项目的名称也是其 SSH 客户端的名称，TunnelSSH 借鉴了 [tatsushid/minssh](https://github.com/tatsushid/minssh) 相关代码，是一个有限的 SSH 客户端，主要是为了解决作者在使用 SSH 协议管理 git 存储库时，无法使用系统代理的问题。一个简单的截图如下：
+
+![](./docs/images/snapshot.png)
 
