@@ -16,3 +16,42 @@ TunnelSSH 既是此项目的名称也是其 SSH 客户端的名称，TunnelSSH �
 
 请注意，在这里我使用了 [baulk](https://github.com/baulk/baulk.git) 安装了 TunnelSSH，并且启动了 baulk 终端环境，因此可以直接使用 `git tunnel -V push` 将存储库推送到 Github 上。
 
+TunnelSSH 的实现没有多少技术含量，简单而言，就是基于 Golang 的 TunnelSSH 在建立 SSH 连接时，如果代理可用就使用代理建立 `net.Conn`，在此基础上建立 SSH 连接，然后再 git 包装命令中设置 `GIT_SSH` 和 `GIT_SSH_VARIANT` 环境变量，支持解析 git 使用的 SSH 命令行参数，这就行了。
+
+## TunnelSSH NetCat
+
+TunnelSSH NetCat 出现的目的很简单，既然 TunnelSSH 暂时不想成为一个强大的 SSH 客户端，那么，NetCat 可以帮助 OpenSSH 变得更加强大，NetCat 命令和 TunnelSSH 使用了同样的 `tunnel` 包，能够读取系统配置（Windows 注册表项）和环境变量，通过代理建立网络连接，当代理不可用时，回退到直接连接，未开启代理时，建立直接连接，同样也非常简单。
+
+## git-tunnel TunnelSSH 的 Git 包装
+
+git-tunnel 通过检查环境配置初始化 GIT_SSH 设置和环境变量后启动 git 相应命令，支持相关操作，处理能够使 git 使用 TunnelSSH 建立 SSH 连接，也可以在 Windows 上设置环境变量，让 Git Over HTTP 通过代理建立网络连接，这样可以无需用户通过运行 `git config` 设置存储库的网络连接方式。
+
+类似命令操作如下（这里使用了 [baulk](https://github.com/baulk/baulk.git) 工具将 git/git-tunnel 所在目录加入到环境变量中了）：
+
+```shell
+git tunnel clone git@github.com:balibuild/tunnelssh.git
+cd tunnelssh
+git tunnel -V fetch
+```
+
+未开代理的时候，你也可以这样使用，没有任何其他影响。在 Linux/macOS 可以设置 Bash/Zsh Alias，在 PowerShell 中同样可以设置别名。
+
+## SSH AskPass Utility
+
+在 TunnelSSH 中，我们使用 ssh-askpass 命令实现在标准输入重定向后的密码信息读取和提示确认功能，在这里我们使用了 Windows 现代的密码凭据输入界面，如下图：
+
+![](./docs/images/ssh-askpass.png)
+
+需要注意的是，由于使用了 Vista 的 GUI 风格，因此程序需要嵌入应用程序清单，所以这个项目需要使用 [bali](https://github.com/balibuild/bali) 进行构建。
+
+## 已知问题
+
+由于作者无 macOS，并未测试读取系统代理设置，因此，在 macOS 上只能读取环境变量中的设置。如果有人想要帮助作者实现该功能，欢迎提交 PR。
+
+## 其他
+
+欢迎用户提交 PR
+
+## 感谢
+
+ssh RunInteractive borrows from [tatsushid/minssh](https://github.com/tatsushid/minssh). Thanks here
