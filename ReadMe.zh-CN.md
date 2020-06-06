@@ -14,3 +14,5 @@ TunnelSSH 既是此项目的名称也是其 SSH 客户端的名称，TunnelSSH �
 
 ![](./docs/images/snapshot.png)
 
+请注意，在这里我使用了 [baulk](https://github.com/baulk/baulk.git) 安装了 TunnelSSH，并且启动了 baulk 终端环境，因此可以直接使用 `git tunnel -V push` 将存储库推送到 Github 上。
+
