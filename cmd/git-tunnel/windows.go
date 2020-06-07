@@ -59,15 +59,13 @@ func InitializeEnv() error {
 		return err
 	}
 	exebin := filepath.Dir(exe)
-	if _, err = exec.LookPath("tunnelssh.exe"); err != nil {
-		tunnelssh := filepath.Join(exebin, "tunnelssh.exe")
-		if _, err := os.Stat(tunnelssh); err != nil {
-			return err
-		}
-		pvv = append(pvv, exebin)
+	tunnelsshexe := filepath.Join(exebin, "tunnelssh.exe")
+	if _, err := os.Stat(tunnelsshexe); err != nil {
+		return err
 	}
+	DebugPrint("tunnelssh %s", tunnelsshexe)
 	os.Setenv("PATH", strings.Join(pvv, ";"))
-	os.Setenv("GIT_SSH", "tunnelssh.exe")
+	os.Setenv("GIT_SSH", tunnelsshexe)
 	os.Setenv("GIT_SSH_VARIANT", "ssh")
 
 	// to support git over HTTP proxy

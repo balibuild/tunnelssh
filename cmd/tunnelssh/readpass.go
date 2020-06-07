@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/balibuild/tunnelssh/cli"
@@ -26,15 +27,32 @@ const (
 	AskEcho = 1
 )
 
-// AttachConsole
-
-func readAskPass(prompt, user string, passwd bool) (string, error) {
+func lookupAskPass() (string, error) {
+	var suffix string
+	if runtime.GOOS == "windows" {
+		if askpass, err := exec.LookPath("ssh-askpass-baulk"); err == nil {
+			return askpass, nil
+		}
+		suffix = ".exe"
+	}
 	exe, err := os.Executable()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%v", err)
+		fmt.Fprintf(os.Stderr, "lookup executable %v", err)
 		return "", err
 	}
-	askpass := filepath.Join(filepath.Dir(exe), "ssh-askpass")
+	askpassname := "ssh-askpass" + suffix
+	askpass := filepath.Join(filepath.Dir(exe), askpassname)
+	if _, err := os.Stat(askpass); err != nil {
+		return "", err
+	}
+	return askpass, nil
+}
+
+func readAskPass(prompt, user string, passwd bool) (string, error) {
+	askpass, err := lookupAskPass()
+	if err != nil {
+		return "", err
+	}
 	cmd := exec.Command(askpass)
 	if passwd {
 		cmd.Args = append(cmd.Args, "-p", prompt, "-u", user)

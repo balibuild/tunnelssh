@@ -45,6 +45,20 @@ example
 `, os.Args[0])
 }
 
+// IsDebugMode todo
+var IsDebugMode bool
+
+// DebugLevel todo
+var DebugLevel int
+
+// DebugPrint todo
+func DebugPrint(format string, a ...interface{}) {
+	if IsDebugMode || DebugLevel == 3 {
+		ss := fmt.Sprintf(format, a...)
+		_, _ = os.Stderr.WriteString(cli.StrCat("debug3: \x1b[33m", ss, "\x1b[0m\n"))
+	}
+}
+
 type option struct {
 }
 
@@ -58,6 +72,7 @@ func (o *option) Invoke(val int, oa, raw string) error {
 		os.Exit(0)
 	case 'V':
 		os.Setenv("TUNNEL_DEBUG", "YES")
+		IsDebugMode = true
 	default:
 	}
 	return nil
