@@ -8,6 +8,36 @@
 
 在 OpenSSH 中，我们可以使用 ProxyCommand 设置让 OpenSSH 客户端经由 Proxy command 建立连接，但配置是固定的，一旦用户网络情况调整，比如关闭代理就需要重新设置，这有一些麻烦，于是我便决定编写 TunnelSSH 解决这个问题。实际上开发一个全功能的 SSH 客户端稍显麻烦，而 OpenSSH 可以设置 ProxyCommand，因此在 TunnelSSH 中，我们还提供了 necat 命令，当 OpenSSH 通过设置 ProxyCommand 为 netcat 时，netcat 将解决自动按照系统设置建立网络连接。除此之外，在 TunnelSSH 项目中，我们还提供了 TunnelSSH 的 git 包装，SSH AskPass Utility 工具，这就是 TunnelSSH 的基本内容。
 
+## 安装 TunnelSSH
+
+在 Windows 中使用 [baulk](https://github.com/baulk/baulk) 安装 TunnelSSH：
+
+```powershell
+baulk install tunnelssh
+# you can run git tunnel command ...
+# git tunnel -V clone git@github.com:balibuild/tunnelssh.git
+# -V --verbose mode
+git tunnel clone git@github.com:balibuild/tunnelssh.git
+```
+
+其他环境中，你可以下载 TunnelSSH 最新版本：[https://github.com/balibuild/tunnelssh/releases/latest](https://github.com/balibuild/tunnelssh/releases)
+
+```powershell
+# Windows
+Invoke-Expression (New-Object System.Net.WebClient).DownloadString('https://github.com/balibuild/tunnelssh/releases/download/1.0.0/TunnelSSH-windows-amd64-1.0.0.zip')
+Expand-Archive TunnelSSH-windows-amd64-1.0.0.zip tunnelssh
+# other options ...
+```
+
+
+```shell
+# Linux
+wget https://github.com/balibuild/tunnelssh/releases/download/1.0.0/TunnelSSH-linux-amd64-1.0.0.tar.gz
+tar -xvf TunnelSSH-linux-amd64-1.0.0.tar.gz
+mv TunnelSSH-linux-amd64-1.0.0 /path/to/your/tunnelsshdir
+# other options
+```
+
 ## TunnelSSH 介绍
 
 TunnelSSH 既是此项目的名称也是其 SSH 客户端的名称，TunnelSSH 借鉴了 [tatsushid/minssh](https://github.com/tatsushid/minssh) 相关代码，是一个有限的 SSH 客户端，主要是为了解决作者在使用 SSH 协议管理 git 存储库时，无法使用系统代理的问题。一个简单的截图如下：

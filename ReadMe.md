@@ -8,13 +8,43 @@ When an enterprise isolates an external network, only specific machines are allo
 
 In OpenSSH, we can use the ProxyCommand setting to allow the OpenSSH client to establish a connection via the Proxy command, but the configuration is fixed. Once the user's network conditions are adjusted, such as closing the proxy, you need to reset it, which has some troubles, so I decided to write TunnelSSH solve this problem. In fact, developing a full-featured SSH client is a bit troublesome, and OpenSSH can set the ProxyCommand, so in TunnelSSH, we also provide the necat command. When OpenSSH sets the ProxyCommand to netcat, netcat will solve the problem of automatically establishing the network according to the system settings. connection. In addition, in the TunnelSSH project, we also provide TunnelSSH git package, SSH AskPass Utility tool, which is the basic content of TunnelSSH.
 
+## Install
+
+Use [baulk](https://github.com/baulk/baulk) on Windows:
+
+```powershell
+baulk install tunnelssh
+# you can run git tunnel command ...
+# git tunnel -V clone git@github.com:balibuild/tunnelssh.git
+# -V --verbose mode
+git tunnel clone git@github.com:balibuild/tunnelssh.git
+```
+
+Download and extract, URL [https://github.com/balibuild/tunnelssh/releases/latest](https://github.com/balibuild/tunnelssh/releases)
+
+```powershell
+# Windows
+Invoke-Expression (New-Object System.Net.WebClient).DownloadString('https://github.com/balibuild/tunnelssh/releases/download/1.0.0/TunnelSSH-windows-amd64-1.0.0.zip')
+Expand-Archive TunnelSSH-windows-amd64-1.0.0.zip tunnelssh
+# other options ...
+```
+
+
+```shell
+# Linux
+wget https://github.com/balibuild/tunnelssh/releases/download/1.0.0/TunnelSSH-linux-amd64-1.0.0.tar.gz
+tar -xvf TunnelSSH-linux-amd64-1.0.0.tar.gz
+mv TunnelSSH-linux-amd64-1.0.0 /path/to/your/tunnelsshdir
+# other options
+```
+
 ## Introduction to TunnelSSH
 
 TunnelSSH is both the name of this project and the name of its SSH client. TunnelSSH borrows from [tatsushid/minssh](https://github.com/tatsushid/minssh) related code, is a limited SSH client, mainly to solve the author When using the SSH protocol to manage git repositories, the system proxy cannot be used. A simple screenshot is as follows:
 
 ![](./docs/images/snapshot.png)
 
-Please note that here I used [baulk](https://github.com/baulk/baulk.git) to install TunnelSSH, and started the baulk terminal environment, so I can directly use `git tunnel -V push` to store The library is pushed to Github.
+Please note that here I used [baulk](https://github.com/baulk/baulk) to install TunnelSSH, and started the baulk terminal environment, so I can directly use `git tunnel -V push` to store The library is pushed to Github.
 
 The implementation of TunnelSSH does not have much technical content. In short, it is based on Golang's TunnelSSH. When establishing an SSH connection, if the agent is available, use the agent to establish `net.Conn`, establish an SSH connection on this basis, and then git packaging command Set the `GIT_SSH` and `GIT_SSH_VARIANT` environment variables to support parsing the SSH command line parameters used by git, and that's it.
 
