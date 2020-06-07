@@ -99,7 +99,7 @@ func (bm *BoringMachine) DialDirect(network string, address string, timeout time
 	if err != nil {
 		return nil, err
 	}
-	bm.DebugPrint("Establish direct connection %s", address)
+	bm.DebugPrint("Establish direct connection %s", conn.RemoteAddr().String())
 	return conn, nil
 }
 

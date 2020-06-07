@@ -191,11 +191,11 @@ func (sc *SSHClient) Loop() error {
 	sc.sess.Stdin = os.Stdin
 	// git escape argv done
 	args := strings.Join(sc.argv, " ")
+	DebugPrint("Exec cmd: %s", args)
 	sigC := sc.WatchSignals()
 	defer func() {
 		signal.Stop(sigC)
 	}()
-	DebugPrint("cmd: %s", args)
 	sessC := make(chan error)
 	go func() {
 		sessC <- sc.sess.Run(args)

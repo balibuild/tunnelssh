@@ -63,7 +63,7 @@ func InitializeEnv() error {
 	if _, err := os.Stat(tunnelsshexe); err != nil {
 		return err
 	}
-	DebugPrint("tunnelssh %s", tunnelsshexe)
+	DebugPrint("TunnelSSH %s", tunnelsshexe)
 	os.Setenv("PATH", strings.Join(pvv, ";"))
 	os.Setenv("GIT_SSH", tunnelsshexe)
 	os.Setenv("GIT_SSH_VARIANT", "ssh")
