@@ -73,7 +73,7 @@ func InitializeEnv() error {
 	// to support git over HTTP proxy
 	if ps, err := tunnel.ResolveRegistryProxy(); err == nil {
 		proxyurl := ps.ProxyServer
-		if strings.Index(proxyurl, "://") == -1 {
+		if !strings.Contains(proxyurl, "://") {
 			proxyurl = "http://" + proxyurl // avoid proxy url parse failed
 		}
 		os.Setenv("HTTP_PROXY", proxyurl)

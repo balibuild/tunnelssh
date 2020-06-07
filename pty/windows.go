@@ -100,8 +100,7 @@ func (ci *cygwinIoctl) Disable(flags int) bool {
 func (ci *cygwinIoctl) Restore() {
 	cmd := exec.Command("stty", ci.argv...)
 	cmd.Stdin = os.Stdin
-	if err := cmd.Run(); err != nil {
-	}
+	_ = cmd.Run()
 }
 
 // ReadPassword todo

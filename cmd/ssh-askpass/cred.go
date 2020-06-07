@@ -79,8 +79,16 @@ func ZeroMemory(ptr unsafe.Pointer, n uintptr)
 func CredUIPromptForWindowsCredentials(prompt, user string) (string, error) {
 	var ci creduiinfow
 	ci.cbSize = uint32(unsafe.Sizeof(ci))
-	ci.pszCaptionText = syscall.StringToUTF16Ptr("Askpass Utility for TunnelSSH")
-	ci.pszMessageText = syscall.StringToUTF16Ptr(cli.StrCat(prompt, "\nEnter username '", user, "'"))
+	pszCaptionText, err := syscall.UTF16PtrFromString("Askpass Utility for TunnelSSH")
+	if err != nil {
+		return "", err
+	}
+	pszMessageText, err := syscall.UTF16PtrFromString(cli.StrCat(prompt, "\nEnter username '", user, "'"))
+	if err != nil {
+		return "", err
+	}
+	ci.pszCaptionText = pszCaptionText
+	ci.pszMessageText = pszMessageText
 	ci.hwnd = GetActiveWindow()
 	ci.hbmBanner = windows.Handle(0)
 	var authPackage uint32
@@ -129,8 +137,16 @@ func CredUIPromptForWindowsCredentials(prompt, user string) (string, error) {
 func CredUIPromptForCredentials(prompt, user string) (string, error) {
 	var ci creduiinfow
 	ci.cbSize = uint32(unsafe.Sizeof(ci))
-	ci.pszCaptionText = syscall.StringToUTF16Ptr("Askpass Utility for TunnelSSH")
-	ci.pszMessageText = syscall.StringToUTF16Ptr(prompt)
+	pszCaptionText, err := syscall.UTF16PtrFromString("Askpass Utility for TunnelSSH")
+	if err != nil {
+		return "", err
+	}
+	pszMessageText, err := syscall.UTF16PtrFromString(prompt)
+	if err != nil {
+		return "", err
+	}
+	ci.pszCaptionText = pszCaptionText
+	ci.pszMessageText = pszMessageText
 	ci.hwnd = GetActiveWindow()
 	ci.hbmBanner = windows.Handle(0)
 	passwd := make([]uint16, CreduiMaxPasswordLength+1)
@@ -140,11 +156,12 @@ func CredUIPromptForCredentials(prompt, user string) (string, error) {
 	username = append(username, userbuf...)
 
 	fSave := FALSE
+	pserver, _ := syscall.UTF16PtrFromString("TheServer")
 	//fSave := windows.FALSE
 	flags := CreduiFlagsGenericCredentials | CreduiFlagsKeepUsername | CreduiFlagsPasswordOnlyOK | CreduiFlagsAlwaysShowUI | CreduiFlagsDoNotPersist
 	r, _, _ := pCredUIPromptForCredentialsW.Call(
 		uintptr(unsafe.Pointer(&ci)),
-		uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr("TheServer"))),
+		uintptr(unsafe.Pointer(pserver)),
 		NULL,                                  //Reserved
 		0,                                     // Reason
 		uintptr(unsafe.Pointer(&username[0])), //User

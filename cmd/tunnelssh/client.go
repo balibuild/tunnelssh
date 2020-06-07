@@ -71,7 +71,9 @@ func (sc *SSHClient) SendEnv() error {
 	}
 	for k, v := range sc.env {
 		DebugPrint("SetEnv %s=%s", k, v)
-		sc.sess.Setenv(k, v)
+		if err := sc.sess.Setenv(k, v); err != nil {
+			return err
+		}
 	}
 	return nil
 }

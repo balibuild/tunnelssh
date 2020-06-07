@@ -42,7 +42,7 @@ func (bm *BoringMachine) Initialize() error {
 // DialTunnel todo
 func (bm *BoringMachine) DialTunnel(network string, address string, timeout time.Duration) (net.Conn, error) {
 	proxyurl := bm.Setting.ProxyServer
-	if strings.Index(proxyurl, "://") == -1 {
+	if !strings.Contains(proxyurl, "://") {
 		proxyurl = "http://" + proxyurl // avoid proxy url parse failed
 	}
 	u, err := url.Parse(proxyurl)

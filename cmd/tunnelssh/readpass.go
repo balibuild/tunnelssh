@@ -49,7 +49,9 @@ func readAskPass(prompt, user string, passwd bool) (string, error) {
 	}
 	defer out.Close()
 	br := bufio.NewReader(out)
-	cmd.Start()
+	if err = cmd.Start(); err != nil {
+		return "", err
+	}
 	ln, err := br.ReadString('\n')
 	if err != nil && err != io.EOF {
 		DebugPrint("read askpass ReadString %v", err)

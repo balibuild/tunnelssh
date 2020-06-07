@@ -94,8 +94,8 @@ func GetActiveWindow() windows.Handle {
 func MessageBox(hwnd uintptr, caption, title string, flags uint) int {
 	ret, _ := windows.MessageBox(
 		windows.Handle(hwnd),
-		syscall.StringToUTF16Ptr(caption),
-		syscall.StringToUTF16Ptr(title),
+		StringToUTF16Ptr(caption),
+		StringToUTF16Ptr(title),
 		uint32(flags))
 	return int(ret)
 }
@@ -167,6 +167,12 @@ type taskDialogConfig struct {
 	cxWidth                 uint32
 }
 
+// StringToUTF16Ptr todo
+func StringToUTF16Ptr(s string) *uint16 {
+	a, _ := syscall.UTF16PtrFromString(s)
+	return a
+}
+
 func taskdialogcallback(hwnd windows.Handle, msg uint, wParam uintptr, lParam, lpRefData uintptr) uint {
 	if msg == 0 {
 		_, _, _ = pSetForegroundWindow.Call(uintptr(hwnd))
@@ -185,10 +191,10 @@ func TaskDialogIndirect(caption, title string) int {
 	tl += PutPtr(buf[tl:], uintptr(h))                                                                         //hInst
 	tl += PutUint32(buf[tl:], uint32(TDFALLOWDIALOGCANCELLATION|TDFPOSITIONRELATIVETOWINDOW|TDFSIZETOCONTENT)) //dwFlags
 	tl += 4                                                                                                    //dwCommonButtons                                                                                             // common button
-	tl += PutPtr(buf[tl:], uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(title))))                           //pszWindowTitle
+	tl += PutPtr(buf[tl:], uintptr(unsafe.Pointer(StringToUTF16Ptr(title))))                                   //pszWindowTitle
 	tl += PutPtr(buf[tl:], uintptr(0))                                                                         //pszMainIcon
 	tl += PutPtr(buf[tl:], uintptr(0))                                                                         //pszMainInstruction
-	tl += PutPtr(buf[tl:], uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(caption))))                         //pszContent
+	tl += PutPtr(buf[tl:], uintptr(unsafe.Pointer(StringToUTF16Ptr(caption))))                                 //pszContent
 	tl += 4                                                                                                    //cButtons
 	tl += PutPtr(buf[tl:], 0)                                                                                  //pButtons
 	tl += 4                                                                                                    //nDefaultButton
@@ -196,9 +202,9 @@ func TaskDialogIndirect(caption, title string) int {
 	tl += PutPtr(buf[tl:], 0)                                                                                  //pRadioButtons
 	tl += 4                                                                                                    //nDefaultRadioButton
 	tl += PutPtr(buf[tl:], 0)                                                                                  //pszVerificationText
-	tl += PutPtr(buf[tl:], uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(helpLink))))                        //pszExpandedInformation
-	tl += PutPtr(buf[tl:], uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr("Less information"))))              //pszExpandedControlText
-	tl += PutPtr(buf[tl:], uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr("More information"))))              //pszCollapsedControlText
+	tl += PutPtr(buf[tl:], uintptr(unsafe.Pointer(StringToUTF16Ptr(helpLink))))                                //pszExpandedInformation
+	tl += PutPtr(buf[tl:], uintptr(unsafe.Pointer(StringToUTF16Ptr("Less information"))))                      //pszExpandedControlText
+	tl += PutPtr(buf[tl:], uintptr(unsafe.Pointer(StringToUTF16Ptr("More information"))))                      //pszCollapsedControlText
 	tl += PutPtr(buf[tl:], 0)                                                                                  //pszFooterIcon
 	tl += PutPtr(buf[tl:], 0)                                                                                  //pszFooter
 	callback := syscall.NewCallback(taskdialogcallback)
@@ -232,9 +238,9 @@ func TaskDialog(caption, title string) int {
 	r, _, _ := pTaskDialog.Call(
 		uintptr(GetActiveWindow()),
 		uintptr(h), // Mode
-		uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(title))),
-		uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr("Askpass Utility Confirm"))), //icon
-		uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(caption))),                   //icon
+		uintptr(unsafe.Pointer(StringToUTF16Ptr(title))),
+		uintptr(unsafe.Pointer(StringToUTF16Ptr("Askpass Utility Confirm"))), //icon
+		uintptr(unsafe.Pointer(StringToUTF16Ptr(caption))),                   //icon
 		uintptr(TDCBFYESBUTTON|TDCBFNOBUTTON),
 		MakeIntreSource(-1), //WARNING ICON
 		uintptr(unsafe.Pointer(&nButtonPressed)),
