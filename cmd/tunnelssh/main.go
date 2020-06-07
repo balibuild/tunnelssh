@@ -235,9 +235,9 @@ func main() {
 	defer sc.Close()
 	if err := sc.Loop(); err != nil {
 		sc.onFinal(err)
-		switch err.(type) {
+		switch err := err.(type) {
 		case *ssh.ExitError:
-			os.Exit(err.(*ssh.ExitError).ExitStatus())
+			os.Exit(err.ExitStatus())
 		default:
 		}
 		os.Exit(1)
