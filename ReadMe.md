@@ -50,6 +50,10 @@ The implementation of TunnelSSH does not have much technical content. In short, 
 
 Please note here that TunnelSSH parses OpenSSH format private keys and supports parsing some OpenSSH configurations, including `IdentityFile`, `HostName`, `User`, `Port`. Parsing the OpenSSH configuration uses the modified [ssh_config](https://github.com/kevinburke/ssh_config).
 
+TunnelSSH Network Layer:
+
+![](./docs/images/layer.svg)
+
 ## TunnelSSH NetCat
 
 The purpose of the appearance of TunnelSSH NetCat is very simple. Since TunnelSSH does not want to be a powerful SSH client for the time being, NetCat can help OpenSSH become more powerful. NetCat commands and TunnelSSH use the same `tunnel` package, which can read the system configuration ( Windows registry keys) and environment variables. Establish a network connection through the proxy. When the proxy is not available, fall back to the direct connection. When the proxy is not turned on, it is also very simple to establish a direct connection.

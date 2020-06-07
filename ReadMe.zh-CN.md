@@ -50,6 +50,10 @@ TunnelSSH 的实现没有多少技术含量，简单而言，就是基于 Golang
 
 这里请注意，TunnelSSH 解析的是 OpenSSH 格式私钥，支持解析部分 OpenSSH 配置，包括 `IdentityFile`，`HostName`，`User`，`Port`。解析 OpenSSH 配置使用了修改后的 [ssh_config](https://github.com/kevinburke/ssh_config)。
 
+TunnelSSH 网络分层:
+
+![](./docs/images/layer.svg)
+
 ## TunnelSSH NetCat
 
 TunnelSSH NetCat 出现的目的很简单，既然 TunnelSSH 暂时不想成为一个强大的 SSH 客户端，那么，NetCat 可以帮助 OpenSSH 变得更加强大，NetCat 命令和 TunnelSSH 使用了同样的 `tunnel` 包，能够读取系统配置（Windows 注册表项）和环境变量，通过代理建立网络连接，当代理不可用时，回退到直接连接，未开启代理时，建立直接连接，同样也非常简单。
