@@ -1,5 +1,12 @@
 # TunnelSSH 一个机智的 SSH 客户端
 
+[![license badge](https://img.shields.io/github/license/balibuild/tunnelssh.svg)](LICENSE)
+[![Master Branch Status](https://github.com/balibuild/tunnelssh/workflows/CI/badge.svg)](https://github.com/balibuild/tunnelssh/actions)
+[![Latest Release Downloads](https://img.shields.io/github/downloads/balibuild/tunnelssh/latest/total.svg)](https://github.com/balibuild/tunnelssh/releases/latest)
+[![Total Downloads](https://img.shields.io/github/downloads/balibuild/tunnelssh/total.svg)](https://github.com/balibuild/tunnelssh/releases)
+[![996.icu](https://img.shields.io/badge/link-996.icu-red.svg)](https://996.icu)
+
+
 我们逐渐依赖上了高速互联网，每一天，浏览社交媒体，玩游戏，看视频，收发邮件，远程视频，都离不开网络。对于程序员而言，网络能解决我们的协调开发问题，我们可以通过分布式版本控制系统远程与人协作，但这一切建立在稳定的网络连接的基础上。
 
 网络又是复杂的，多变的，硬件可能出现故障，企业可能添加企业策略限制，运营商可能相应链路带宽不足，也许有其他因素让网络连接无法建立或者中断。所以也就有了特定的机制绕过这些限制，建立特殊的网络连接。
