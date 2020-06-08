@@ -1,5 +1,14 @@
 # TunnelSSH a witty SSH client
 
+[![license badge](https://img.shields.io/github/license/balibuild/tunnelssh.svg)](LICENSE)
+[![Master Branch Status](https://github.com/balibuild/tunnelssh/workflows/CI/badge.svg)](https://github.com/balibuild/tunnelssh/actions)
+[![Latest Release Downloads](https://img.shields.io/github/downloads/balibuild/tunnelssh/latest/total.svg)](https://github.com/balibuild/tunnelssh/releases/latest)
+[![Total Downloads](https://img.shields.io/github/downloads/balibuild/tunnelssh/total.svg)](https://github.com/balibuild/tunnelssh/releases)
+[![996.icu](https://img.shields.io/badge/link-996.icu-red.svg)](https://996.icu)
+
+[简体中文](./ReadMe.zh-CN.md)
+
+
 We are gradually relying on high-speed Internet. Every day, browsing social media, playing games, watching videos, sending and receiving emails, and remote video are inseparable from the Internet. For programmers, the network can solve our coordinated development problems. We can collaborate with people remotely through a distributed version control system, but all this is based on a stable network connection.
 
 The network is complex and changeable, the hardware may fail, the enterprise may add enterprise policy restrictions, the operator may have insufficient link bandwidth, and there may be other factors that prevent the network connection from being established or interrupted. Therefore, there are specific mechanisms to bypass these restrictions and establish special network connections.
