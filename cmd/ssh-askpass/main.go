@@ -61,7 +61,7 @@ func (a *askPassOption) Invoke(val int, oa, raw string) error {
 }
 
 func (a *askPassOption) ParseArgv() error {
-	var ae cli.ArgvParser
+	var ae cli.ParseArgs
 	ae.Add("help", cli.NOARG, 'h')
 	ae.Add("version", cli.NOARG, 'v')
 	ae.Add("verbose", cli.NOARG, 'V')

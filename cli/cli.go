@@ -31,8 +31,8 @@ type option struct {
 	val  int
 }
 
-// ArgvParser todo
-type ArgvParser struct {
+// ParseArgs todo
+type ParseArgs struct {
 	opts       []option
 	ua         []string
 	index      int
@@ -40,16 +40,16 @@ type ArgvParser struct {
 }
 
 // Add option
-func (ae *ArgvParser) Add(name string, ha, val int) {
+func (ae *ParseArgs) Add(name string, ha, val int) {
 	ae.opts = append(ae.opts, option{name: name, ha: ha, val: val})
 }
 
 // Unresolved todo
-func (ae *ArgvParser) Unresolved() []string {
+func (ae *ParseArgs) Unresolved() []string {
 	return ae.ua
 }
 
-func (ae *ArgvParser) parseInternalLong(a string, argv []string, ac Receiver) error {
+func (ae *ParseArgs) parseInternalLong(a string, argv []string, ac Receiver) error {
 	ha := OPTIONAL
 	ch := -1
 	var oa string
@@ -87,7 +87,7 @@ func (ae *ArgvParser) parseInternalLong(a string, argv []string, ac Receiver) er
 	return nil
 }
 
-func (ae *ArgvParser) parseInternalShort(a string, argv []string, ac Receiver) error {
+func (ae *ParseArgs) parseInternalShort(a string, argv []string, ac Receiver) error {
 	ha := OPTIONAL
 	ch := -1
 	if a[0] == '=' {
@@ -128,7 +128,7 @@ func (ae *ArgvParser) parseInternalShort(a string, argv []string, ac Receiver) e
 	return nil
 }
 
-func (ae *ArgvParser) parseInternal(a string, argv []string, ac Receiver) error {
+func (ae *ParseArgs) parseInternal(a string, argv []string, ac Receiver) error {
 	if len(a) == 1 {
 		return ErrUnExpectedArg
 	}
@@ -139,7 +139,7 @@ func (ae *ArgvParser) parseInternal(a string, argv []string, ac Receiver) error 
 }
 
 // Execute todo
-func (ae *ArgvParser) Execute(argv []string, ac Receiver) error {
+func (ae *ParseArgs) Execute(argv []string, ac Receiver) error {
 	if len(argv) == 0 {
 		return ErrNilArgv
 	}

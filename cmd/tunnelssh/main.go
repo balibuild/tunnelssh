@@ -185,7 +185,7 @@ func (sc *SSHClient) ParseArgv() error {
 		},
 	}
 	sc.env = make(map[string]string)
-	var ae cli.ArgvParser
+	var ae cli.ParseArgs
 	ae.Add("help", cli.NOARG, 'h')
 	ae.Add("version", cli.NOARG, 'v')
 	ae.Add("verbose", cli.NOARG, 'V')
