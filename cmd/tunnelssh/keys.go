@@ -69,7 +69,8 @@ func askAddingUnknownHostKey(address string, remote net.Addr, key ssh.PublicKey)
 			answer = strings.ToLower(strings.TrimSpace(answer))
 			if answer == "yes" {
 				return true, nil
-			} else if answer == "no" {
+			}
+			if answer == "no" {
 				return false, nil
 			}
 			fmt.Print("Please type 'yes' or 'no': ")
