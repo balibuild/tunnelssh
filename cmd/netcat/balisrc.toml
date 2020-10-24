@@ -1,7 +1,7 @@
 name = "netcat"
 description = "netcat - A witty netcat client"
 destination = "bin"
-version = "1.1.2"
+version = "1.1.1"
 versioninfo = "res/versioninfo.json"
 manifest = "res/netcat.manifest"
 goflags = [
