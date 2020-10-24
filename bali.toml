@@ -1,0 +1,15 @@
+
+# https://toml.io/en/
+name = "TunnelSSH"
+version = "1.2.0"
+dirs = [
+    "cmd/tunnelssh", #
+    "cmd/netcat",
+    "cmd/ssh-askpass",
+    "cmd/git-tunnel",
+]
+
+[[files]]
+path = "LICENSE"
+destination = "share"
+norename = true

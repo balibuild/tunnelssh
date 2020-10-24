@@ -1,0 +1,11 @@
+name = "ssh-askpass"
+description = "Askpass Utility for TunnelSSH"
+destination = "bin"
+version = "1.2.0"
+versioninfo = "res/versioninfo.json"
+icon = "res/ssh-askpass.ico"
+manifest = "res/ssh-askpass.manifest"
+goflags = [
+    "-ldflags",
+    "-X 'main.VERSION=$BUILD_VERSION' -X 'main.BUILDTIME=$BUILD_TIME' -X 'main.BUILDBRANCH=$BUILD_BRANCH' -X 'main.BUILDCOMMIT=$BUILD_COMMIT' -X 'main.GOVERSION=$BUILD_GOVERSION'",
+]

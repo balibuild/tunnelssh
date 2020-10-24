@@ -1,0 +1,10 @@
+name = "netcat"
+description = "netcat - A witty netcat client"
+destination = "bin"
+version = "1.2.0"
+versioninfo = "res/versioninfo.json"
+manifest = "res/netcat.manifest"
+goflags = [
+    "-ldflags",
+    "-X 'main.VERSION=$BUILD_VERSION' -X 'main.BUILDTIME=$BUILD_TIME' -X 'main.BUILDBRANCH=$BUILD_BRANCH' -X 'main.BUILDCOMMIT=$BUILD_COMMIT' -X 'main.GOVERSION=$BUILD_GOVERSION'",
+]
