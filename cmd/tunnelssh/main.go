@@ -170,13 +170,13 @@ func (sc *SSHClient) ParseArgv() error {
 	//HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	sc.config = &ssh.ClientConfig{
 		HostKeyAlgorithms: []string{
-			ssh.KeyAlgoRSA,
 			ssh.KeyAlgoECDSA256,
 			ssh.KeyAlgoSKECDSA256,
 			ssh.KeyAlgoECDSA384,
 			ssh.KeyAlgoECDSA521,
 			ssh.KeyAlgoED25519,
 			ssh.KeyAlgoSKED25519,
+			ssh.KeyAlgoRSA,
 		},
 		HostKeyCallback: sc.HostKeyCallback,
 		Auth: []ssh.AuthMethod{
@@ -219,11 +219,13 @@ func (sc *SSHClient) ParseArgv() error {
 	if sc.ka.MakeAgent() == nil {
 		sc.config.Auth = append(sc.config.Auth, sc.ka.UseAgent())
 	}
+	tunnel.IsDebugMode = IsDebugMode
+	tunnel.DebugLevel = DebugLevel
 	return nil
 }
 
 func main() {
-	sc := &SSHClient{home: tunnel.HomeDir()}
+	sc := &SSHClient{home: tunnel.HomePath()}
 	if err := sc.ParseArgv(); err != nil {
 		fmt.Fprintf(os.Stderr, "ParseArgv: %s\n", err)
 		os.Exit(1)

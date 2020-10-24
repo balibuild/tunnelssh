@@ -106,7 +106,9 @@ func (ka *KeyAgent) UseAgent() ssh.AuthMethod {
 
 //HostKeyCallback todo
 func (sc *SSHClient) HostKeyCallback(hostname string, remote net.Addr, key ssh.PublicKey) error {
+	DebugPrint("Server %s host key: %s %s", hostname, keyTypeName(key), ssh.FingerprintSHA256(key))
 	if _, err := os.Stat(defaultKnownhosts); err == nil {
+		DebugPrint("Found %s", defaultKnownhosts)
 		hostKeyCallback, err := knownhosts.New(defaultKnownhosts)
 		if err != nil {
 			return cli.ErrorCat("failed to load knownhosts files: %s", err.Error())
@@ -117,6 +119,7 @@ func (sc *SSHClient) HostKeyCallback(hostname string, remote net.Addr, key ssh.P
 		}
 		keyErr, ok := err.(*knownhosts.KeyError)
 		if !ok || len(keyErr.Want) > 0 {
+			DebugPrint("Verify KnownHosts %v", err)
 			return err
 		}
 	} else if !os.IsNotExist(err) {

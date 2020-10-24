@@ -2,6 +2,7 @@ package tunnel
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net"
 	"net/url"
@@ -9,12 +10,37 @@ import (
 	"os/user"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
+	"github.com/balibuild/tunnelssh/cli"
 	"github.com/balibuild/tunnelssh/external/sshconfig"
 	"golang.org/x/crypto/ssh"
 )
+
+// IsDebugMode todo
+var IsDebugMode bool
+
+// DebugLevel todo
+var DebugLevel int
+
+// DebugPrint todo
+func DebugPrint(format string, a ...interface{}) {
+	if IsDebugMode || DebugLevel == 3 {
+		ss := fmt.Sprintf(format, a...)
+		_, _ = os.Stderr.WriteString(cli.StrCat("debug3: \x1b[33m", ss, "\x1b[0m\n"))
+	}
+}
+
+// DebugPrintN todo
+func DebugPrintN(level int, format string, a ...interface{}) {
+	if level >= DebugLevel {
+		ss := fmt.Sprintf(format, a...)
+		ns := strconv.Itoa(level)
+		_, _ = os.Stderr.WriteString(cli.StrCat("debug", ns, ": \x1b[33m", ss, "\x1b[0m\n"))
+	}
+}
 
 type sshconn struct {
 	client *ssh.Client
@@ -65,23 +91,23 @@ func (conn *sshconn) SetWriteDeadline(t time.Time) error {
 	return conn.chcon.SetWriteDeadline(t)
 }
 
-// PathConvert todo
-func PathConvert(p string) string {
-	if !strings.HasPrefix(p, "~") {
-		return p
-	}
-	if runtime.GOOS == "windows" {
-		return filepath.Join(os.Getenv("USERPROFILE"), p[1:])
-	}
-	return filepath.Join(os.Getenv("HOME"), p[1:])
-}
-
-// HomeDir todo
-func HomeDir() string {
+// HomePath todo
+func HomePath() string {
 	if runtime.GOOS == "windows" {
 		return os.Getenv("USERPROFILE")
 	}
 	return os.Getenv("HOME")
+}
+
+// PathConvert todo
+func PathConvert(p string) string {
+	if p == "~" {
+		return HomePath()
+	}
+	if !strings.HasPrefix(p, "~/") && !strings.HasPrefix(p, "~\\") {
+		return os.ExpandEnv(p)
+	}
+	return filepath.Join(HomePath(), p[2:])
 }
 
 func readFromPrivateKey(kf string) (ssh.Signer, error) {
@@ -106,7 +132,7 @@ func (conn *sshconn) publicKeys() ([]ssh.Signer, error) {
 		}
 		return []ssh.Signer{sig}, nil
 	}
-	home := HomeDir()
+	home := HomePath()
 	keys := []string{"id_ed25519", "id_ecdsa", "id_rsa"} // keys
 	signers := make([]ssh.Signer, 0, len(keys))
 	for _, k := range keys {
