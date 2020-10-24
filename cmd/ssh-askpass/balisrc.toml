@@ -1,7 +1,7 @@
 name = "ssh-askpass"
 description = "Askpass Utility for TunnelSSH"
 destination = "bin"
-version = "1.1.0"
+version = "1.1.2"
 versioninfo = "res/versioninfo.json"
 icon = "res/ssh-askpass.ico"
 manifest = "res/ssh-askpass.manifest"

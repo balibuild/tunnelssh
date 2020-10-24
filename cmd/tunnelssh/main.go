@@ -65,6 +65,7 @@ usage: %s <option> args ...
   -V|--verbose     Make the operation more talkative
   -p|--port        Port to connect to on the remote host.
   -o|--option      Partially compatible with SSH: SetEnv, ServerAliveInterval, ConnectTimeout
+  -k|--insecure    Ignore the check of the server public key. Only for testing
   -T               Disable pseudo-tty allocation.
   -t               Force pseudo-tty allocation.
   -4               Forces ssh to use IPv4 addresses only.
@@ -146,6 +147,8 @@ func (sc *SSHClient) Invoke(val int, oa, raw string) error {
 			return errors.New("-4 (IPv4 only) /-6 (IPv6 only) cannot be set at the same time")
 		}
 		sc.v6 = true
+	case 'k':
+		sc.insecure = true
 	default:
 	}
 	return nil
@@ -193,12 +196,12 @@ func (sc *SSHClient) ParseArgv() error {
 	ae.Add("option", cli.REQUIRED, 'o')
 	ae.Add("no-tty", cli.OPTIONAL, 'T') // default no tty
 	ae.Add("force-tty", cli.OPTIONAL, 't')
+	ae.Add("insecure", cli.NOARG, 'k')
 	ae.Add("ipv4", cli.NOARG, '4')
 	ae.Add("ipv6", cli.NOARG, '6')
 	if cli.IsTrue(os.Getenv("TUNNEL_DEBUG")) {
 		IsDebugMode = true
 	}
-
 	if err := ae.Execute(os.Args, sc); err != nil {
 		return err
 	}
@@ -218,6 +221,9 @@ func (sc *SSHClient) ParseArgv() error {
 	sc.ka = &KeyAgent{}
 	if sc.ka.MakeAgent() == nil {
 		sc.config.Auth = append(sc.config.Auth, sc.ka.UseAgent())
+	}
+	if sc.insecure {
+		sc.config.HostKeyCallback = ssh.InsecureIgnoreHostKey()
 	}
 	tunnel.IsDebugMode = IsDebugMode
 	tunnel.DebugLevel = DebugLevel

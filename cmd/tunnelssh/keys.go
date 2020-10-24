@@ -104,6 +104,35 @@ func (ka *KeyAgent) UseAgent() ssh.AuthMethod {
 	return ssh.PublicKeysCallback(agent.NewClient(ka.conn).Signers)
 }
 
+func unfoldKeyError(hostname string, key ssh.PublicKey, ke *knownhosts.KeyError) {
+	k0 := ke.Want[0]
+	hostKeyType := keyTypeName(key)
+	localKeyType := keyTypeName(k0.Key)
+	fmt.Fprintf(os.Stderr, `@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@    WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!     @
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+IT IS POSSIBLE THAT SOMEONE IS DOING SOMETHING NASTY!
+Someone could be eavesdropping on you right now (man-in-the-middle attack)!
+It is also possible that the %s host key has just been changed.
+The fingerprint for the %s key sent by the remote host is
+%s.
+Please contact your system administrator.
+Add correct host key in %s to get rid of this message.
+Offending key in %s:%d. The fingerprint is
+%s.
+%s host key for %s has changed and you have requested strict checking.
+Host key verification failed.
+`, cli.StrCat("\x1b[33m", localKeyType, "\x1b[0m"),
+		cli.StrCat("\x1b[33m", hostKeyType, "\x1b[0m"),
+		cli.StrCat("\x1b[33m", ssh.FingerprintSHA256(key), "\x1b[0m"),
+		k0.Filename,
+		k0.Filename,
+		k0.Line,
+		cli.StrCat("\x1b[33m", ssh.FingerprintSHA256(k0.Key), "\x1b[0m"),
+		hostname, hostKeyType)
+
+}
+
 //HostKeyCallback todo
 func (sc *SSHClient) HostKeyCallback(hostname string, remote net.Addr, key ssh.PublicKey) error {
 	DebugPrint("Server %s host key: %s %s", hostname, keyTypeName(key), ssh.FingerprintSHA256(key))
@@ -113,13 +142,15 @@ func (sc *SSHClient) HostKeyCallback(hostname string, remote net.Addr, key ssh.P
 		if err != nil {
 			return cli.ErrorCat("failed to load knownhosts files: %s", err.Error())
 		}
-		err = hostKeyCallback(hostname, remote, key)
-		if err == nil {
+		if err = hostKeyCallback(hostname, remote, key); err == nil {
 			return nil
 		}
 		keyErr, ok := err.(*knownhosts.KeyError)
-		if !ok || len(keyErr.Want) > 0 {
-			DebugPrint("Verify KnownHosts %v", err)
+		if !ok {
+			return err
+		}
+		if len(keyErr.Want) > 0 {
+			unfoldKeyError(hostname, key, keyErr)
 			return err
 		}
 	} else if !os.IsNotExist(err) {

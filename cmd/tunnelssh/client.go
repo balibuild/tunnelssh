@@ -34,6 +34,7 @@ type SSHClient struct {
 	mode                TerminalMode
 	v4                  bool
 	v6                  bool
+	insecure            bool
 	serverAliveInterval int
 	connectTimeout      int
 	sys                 *sysInfo
