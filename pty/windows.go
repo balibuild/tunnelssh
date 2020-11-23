@@ -11,8 +11,8 @@ import (
 	"strings"
 
 	"github.com/mattn/go-isatty"
-	"golang.org/x/crypto/ssh/terminal"
 	"golang.org/x/sys/windows"
+	"golang.org/x/term"
 )
 
 // GetWinSize get console size or cygwin terminal size
@@ -105,9 +105,9 @@ func (ci *cygwinIoctl) Restore() {
 
 // ReadPassword todo
 func ReadPassword(prompt string) (string, error) {
-	if fd := int(os.Stdin.Fd()); terminal.IsTerminal(fd) {
+	if fd := int(os.Stdin.Fd()); term.IsTerminal(fd) {
 		fmt.Fprintf(os.Stderr, "%s: ", prompt)
-		pwd, err := terminal.ReadPassword(fd)
+		pwd, err := term.ReadPassword(fd)
 		if err != nil {
 			return "", err
 		}
@@ -137,9 +137,9 @@ func ReadInputEx(fd *os.File) ([]byte, error) {
 }
 
 // MakeRaw todo
-func MakeRaw(fd *os.File) (*terminal.State, error) {
+func MakeRaw(fd *os.File) (*term.State, error) {
 	if isatty.IsTerminal(fd.Fd()) {
-		return terminal.MakeRaw(int(fd.Fd()))
+		return term.MakeRaw(int(fd.Fd()))
 	}
 	return nil, errors.New("unsupport raw mode")
 }

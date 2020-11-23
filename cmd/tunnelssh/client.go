@@ -16,7 +16,7 @@ import (
 	"github.com/balibuild/tunnelssh/pty"
 	"github.com/balibuild/tunnelssh/tunnel"
 	"golang.org/x/crypto/ssh"
-	"golang.org/x/crypto/ssh/terminal"
+	"golang.org/x/term"
 )
 
 // SSHClient client
@@ -139,11 +139,11 @@ func (sc *SSHClient) RunInteractive() error {
 		if err != nil {
 			return err
 		}
-		if termstate, err := terminal.MakeRaw(int(os.Stdout.Fd())); err == nil {
-			defer terminal.Restore(int(os.Stdout.Fd()), termstate)
+		if termstate, err := term.MakeRaw(int(os.Stdout.Fd())); err == nil {
+			defer term.Restore(int(os.Stdout.Fd()), termstate)
 		}
-		if termstate, err := terminal.MakeRaw(int(os.Stderr.Fd())); err == nil {
-			defer terminal.Restore(int(os.Stderr.Fd()), termstate)
+		if termstate, err := term.MakeRaw(int(os.Stderr.Fd())); err == nil {
+			defer term.Restore(int(os.Stderr.Fd()), termstate)
 		}
 		modes := ssh.TerminalModes{
 			ssh.ECHO:          0,

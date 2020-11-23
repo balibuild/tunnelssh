@@ -10,7 +10,7 @@ import (
 	"strings"
 	"syscall"
 
-	"golang.org/x/crypto/ssh/terminal"
+	"golang.org/x/term"
 )
 
 // connect tty
@@ -56,7 +56,7 @@ func AskPassword(caption, user string) int {
 		return 1
 	}
 	defer ttyin.Close()
-	state, err := terminal.GetState(int(ttyin.Fd()))
+	state, err := term.GetState(int(ttyin.Fd()))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to get terminal state: %s", err)
 		return 1
@@ -72,7 +72,7 @@ func AskPassword(caption, user string) int {
 		signal.Notify(sigC, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 		select {
 		case <-sigC:
-			terminal.Restore(int(ttyin.Fd()), state)
+			term.Restore(int(ttyin.Fd()), state)
 			os.Exit(1)
 		case <-stopC:
 		}
@@ -82,7 +82,7 @@ func AskPassword(caption, user string) int {
 	} else {
 		fmt.Fprintf(os.Stderr, "Password: ")
 	}
-	b, err := terminal.ReadPassword(int(ttyin.Fd()))
+	b, err := term.ReadPassword(int(ttyin.Fd()))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to read password: %s", err)
 		return 1

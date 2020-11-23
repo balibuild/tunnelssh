@@ -8,8 +8,8 @@ import (
 	"os"
 
 	"github.com/mattn/go-isatty"
-	"golang.org/x/crypto/ssh/terminal"
 	"golang.org/x/sys/unix"
+	"golang.org/x/term"
 )
 
 // GetWinSize todo
@@ -29,7 +29,7 @@ func IsTerminal(fd *os.File) bool {
 // ReadPassword todo
 func ReadPassword(prompt string) (string, error) {
 	fmt.Fprintf(os.Stderr, "%s: ", prompt)
-	pwd, err := terminal.ReadPassword(int(os.Stdin.Fd()))
+	pwd, err := term.ReadPassword(int(os.Stdin.Fd()))
 	if err != nil {
 		return "", err
 	}
@@ -37,9 +37,9 @@ func ReadPassword(prompt string) (string, error) {
 }
 
 // MakeRaw todo
-func MakeRaw(fd *os.File) (*terminal.State, error) {
+func MakeRaw(fd *os.File) (*term.State, error) {
 	if IsTerminal(fd) {
-		return terminal.MakeRaw(int(fd.Fd()))
+		return term.MakeRaw(int(fd.Fd()))
 	}
 	return nil, errors.New("not terminal")
 }
