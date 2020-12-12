@@ -4,6 +4,7 @@ package tunnel
 
 import (
 	"os"
+	"strings"
 
 	"golang.org/x/sys/windows/registry"
 )
@@ -12,6 +13,7 @@ import (
 func ResolveRegistryProxy() (*ProxySettings, error) {
 	k, err := registry.OpenKey(registry.CURRENT_USER, `Software\Microsoft\Windows\CurrentVersion\Internet Settings`, registry.QUERY_VALUE)
 	if err != nil {
+		DebugPrint("OpenKey %v", err)
 		return nil, err
 	}
 	defer k.Close()
@@ -29,6 +31,7 @@ func ResolveRegistryProxy() (*ProxySettings, error) {
 		ps.ProxyOverride = s
 	}
 	if ps.ProxyServer != "" {
+		ps.ProxyServer = strings.Replace(ps.ProxyServer, "http://socks=", "socks://", 1)
 		return ps, nil
 	}
 	return nil, ErrProxyNotConfigured

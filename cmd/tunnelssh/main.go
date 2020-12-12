@@ -70,6 +70,7 @@ usage: %s <option> args ...
   -t               Force pseudo-tty allocation.
   -4               Forces ssh to use IPv4 addresses only.
   -6               Forces ssh to use IPv6 addresses only.
+
 `, os.Args[0])
 }
 
