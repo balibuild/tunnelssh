@@ -93,7 +93,7 @@ func GetActiveWindow() windows.Handle {
 // MessageBox todo
 func MessageBox(hwnd uintptr, caption, title string, flags uint) int {
 	ret, _ := windows.MessageBox(
-		windows.Handle(hwnd),
+		windows.HWND(hwnd),
 		StringToUTF16Ptr(caption),
 		StringToUTF16Ptr(title),
 		uint32(flags))

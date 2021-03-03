@@ -72,6 +72,7 @@ func (o *option) Invoke(val int, oa, raw string) error {
 		os.Exit(0)
 	case 'V':
 		os.Setenv("TUNNEL_DEBUG", "YES")
+		os.Setenv("GIT_CURL_VERBOSE", "2")
 		IsDebugMode = true
 	default:
 	}

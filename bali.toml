@@ -1,7 +1,7 @@
 
 # https://toml.io/en/
 name = "TunnelSSH"
-version = "1.1.1"
+version = "1.1.2"
 dirs = [
     "cmd/tunnelssh", #
     "cmd/netcat",

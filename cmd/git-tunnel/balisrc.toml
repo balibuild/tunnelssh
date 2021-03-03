@@ -1,7 +1,7 @@
 name = "git-tunnel"
 description = "TunnelSSH - A witty ssh client"
 destination = "bin"
-version = "1.1.1"
+version = "1.1.2"
 versioninfo = "res/versioninfo.json"
 manifest = "res/git-tunnel.manifest"
 goflags = [
