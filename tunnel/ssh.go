@@ -125,7 +125,7 @@ func readFromPrivateKey(kf string) (ssh.Signer, error) {
 
 // publicKeys todo
 func (conn *sshconn) publicKeys() ([]ssh.Signer, error) {
-	if identityFile := sshconfig.GetEx(conn.host, "IdentityFile"); len(identityFile) != 0 {
+	if identityFile := sshconfig.Get(conn.host, "IdentityFile"); len(identityFile) != 0 {
 		sig, err := readFromPrivateKey(PathConvert(identityFile))
 		if err != nil {
 			return nil, errors.New("not found host matched keys")
@@ -150,7 +150,7 @@ func (bm *BoringMachine) DialTunnelSSH(u *url.URL, paddr, addr string, timeout t
 	if u.User != nil {
 		config.User = u.User.Username()
 	} else {
-		if config.User = sshconfig.GetEx(u.Host, "User"); len(config.User) == 0 {
+		if config.User = sshconfig.Get(u.Host, "User"); len(config.User) == 0 {
 			current, err := user.Current()
 			if err != nil {
 				return nil, err

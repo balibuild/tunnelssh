@@ -187,18 +187,18 @@ func (sc *SSHClient) HostKeyCallback(hostname string, remote net.Addr, key ssh.P
 func (sc *SSHClient) openPrivateKey(kf string) (ssh.Signer, error) {
 	fd, err := os.Open(kf)
 	if err != nil {
-		DebugPrint("%v", err)
+		DebugPrint("openPrivateKey %s: %v", kf, err)
 		return nil, err
 	}
 	defer fd.Close()
 	buf, err := ioutil.ReadAll(fd)
 	if err != nil {
-		DebugPrint("%v", err)
+		DebugPrint("openPrivateKey ReadAll: %v", err)
 		return nil, err
 	}
 	sig, err := ssh.ParsePrivateKey(buf)
 	if err != nil {
-		DebugPrint("%v", err)
+		DebugPrint("ParsePrivateKey: %v", err)
 		return nil, err
 	}
 	key := sig.PublicKey()
@@ -223,11 +223,14 @@ func (sc *SSHClient) SearchKey(name string) (ssh.Signer, error) {
 // PublicKeys todo
 func (sc *SSHClient) PublicKeys() ([]ssh.Signer, error) {
 	if len(sc.IdentityFile) != 0 {
-		sig, err := sc.openPrivateKey(tunnel.PathConvert(sc.IdentityFile))
-		if err != nil {
-			return nil, errors.New("not found host matched keys")
+		identityFile := tunnel.PathConvert(sc.IdentityFile)
+		if _, err := os.Stat(identityFile); err == nil {
+			sig, err := sc.openPrivateKey(identityFile)
+			if err != nil {
+				return nil, errors.New("not found host matched keys")
+			}
+			return []ssh.Signer{sig}, nil
 		}
-		return []ssh.Signer{sig}, nil
 	}
 	// We drop id_dsa key support
 	// http://www.openssh.com/txt/release-6.5
