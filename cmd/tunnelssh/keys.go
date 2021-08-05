@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"os"
 	"os/signal"
@@ -191,7 +191,7 @@ func (sc *SSHClient) openPrivateKey(kf string) (ssh.Signer, error) {
 		return nil, err
 	}
 	defer fd.Close()
-	buf, err := ioutil.ReadAll(fd)
+	buf, err := io.ReadAll(fd)
 	if err != nil {
 		DebugPrint("openPrivateKey ReadAll: %v", err)
 		return nil, err

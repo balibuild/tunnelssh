@@ -130,7 +130,7 @@ func (p *sshParser) parseKV() sshParserStateFn {
 		})
 		return p.parseStart
 	}
-	lastHost := p.config.Hosts[len(p.config.Hosts)-1]
+	lastHost := p.lastHost()
 	if strings.ToLower(key.val) == "include" {
 		inc, err := NewInclude(strings.Split(val.val, " "), hasEquals, key.Position, comment, p.system, p.depth+1)
 		if err == ErrDepthExceeded {
@@ -156,9 +156,20 @@ func (p *sshParser) parseKV() sshParserStateFn {
 	return p.parseStart
 }
 
+func (p *sshParser) lastHost() *Host {
+	if len(p.config.Hosts) == 0 {
+		p.config.Hosts = append(p.config.Hosts, &Host{
+			implicit: true,
+			Patterns: []*Pattern{matchAll},
+			Nodes:    make([]Node, 0),
+		})
+	}
+	return p.config.Hosts[len(p.config.Hosts)-1]
+}
+
 func (p *sshParser) parseComment() sshParserStateFn {
 	comment := p.getToken()
-	lastHost := p.config.Hosts[len(p.config.Hosts)-1]
+	lastHost := p.lastHost()
 	lastHost.Nodes = append(lastHost.Nodes, &Empty{
 		Comment: comment.val,
 		// account for the "#" as well

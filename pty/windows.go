@@ -50,7 +50,7 @@ func GetWinSize() (w int, h int, err error) {
 
 // IsTerminal todo
 func IsTerminal(fd *os.File) bool {
-	return isatty.IsTerminal(fd.Fd()) || isatty.IsCygwinTerminal(fd.Fd())
+	return term.IsTerminal(int(fd.Fd()))
 }
 
 // ReadPassPhrase todo
