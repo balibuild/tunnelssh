@@ -1,7 +1,7 @@
 name = "tunnelssh"
 description = "TunnelSSH - A witty ssh client"
 destination = "bin"
-version = "1.2.0"
+version = "1.2.1"
 versioninfo = "res/versioninfo.json"
 icon = "res/tunnelssh.ico"
 manifest = "res/tunnelssh.manifest"
