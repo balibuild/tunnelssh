@@ -30,7 +30,7 @@ func InitializeEnv() error {
 	}
 	exebin := filepath.Dir(exe)
 	if _, err = exec.LookPath("tunnelssh"); err != nil {
-		tunnelssh := filepath.Join(exebin, "tunnelssh.exe")
+		tunnelssh := filepath.Join(exebin, "tunnelssh")
 		if _, err := os.Stat(tunnelssh); err != nil {
 			return err
 		}
