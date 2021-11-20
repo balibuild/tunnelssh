@@ -64,7 +64,7 @@ SCRIPTROOT=$(dirname "$REALPATH")
 TOPLEVEL=$(dirname "$SCRIPTROOT")
 
 cd "/tmp"
-GO111MODULE=on go get github.com/balibuild/bali/cmd/bali
+go install github.com/balibuild/bali/v2/cmd/bali@latest
 
 echo -e "build TunnelSSH \\x1b[32m${TOPLEVEL}\\x1b[0m"
 cd "$TOPLEVEL"
