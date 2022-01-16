@@ -1,6 +1,6 @@
 module github.com/balibuild/tunnelssh
 
-go 1.15
+go 1.17
 
 require (
 	github.com/balibuild/winio v0.5.1
