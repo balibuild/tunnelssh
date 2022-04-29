@@ -4,7 +4,7 @@ import (
 	"os/user"
 	"strconv"
 
-	"github.com/balibuild/tunnelssh/external/sshconfig"
+	sshconfig "github.com/balibuild/tunnelssh/external/ssh_config"
 )
 
 // InitializeHost todo

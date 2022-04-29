@@ -13,48 +13,13 @@ import (
 )
 
 type proxyconn struct {
-	conn net.Conn
-	br   *bufio.Reader
+	net.Conn
+	br *bufio.Reader
 }
 
 // Read reads data from the connection.
 func (pc *proxyconn) Read(b []byte) (int, error) {
 	return pc.br.Read(b)
-}
-
-// Write writes data
-func (pc *proxyconn) Write(b []byte) (int, error) {
-	return pc.conn.Write(b)
-}
-
-// Close closes the connection.
-func (pc *proxyconn) Close() error {
-	return pc.conn.Close()
-}
-
-// LocalAddr returns the local network address.
-func (pc *proxyconn) LocalAddr() net.Addr {
-	return pc.conn.LocalAddr()
-}
-
-// RemoteAddr returns the remote network address.
-func (pc *proxyconn) RemoteAddr() net.Addr {
-	return pc.conn.RemoteAddr()
-}
-
-// SetDeadline wapper
-func (pc *proxyconn) SetDeadline(t time.Time) error {
-	return pc.conn.SetDeadline(t)
-}
-
-// SetReadDeadline wapper
-func (pc *proxyconn) SetReadDeadline(t time.Time) error {
-	return pc.conn.SetReadDeadline(t)
-}
-
-// SetWriteDeadline wapper
-func (pc *proxyconn) SetWriteDeadline(t time.Time) error {
-	return pc.conn.SetWriteDeadline(t)
 }
 
 // DialTunnelHTTP use http proxy
@@ -87,7 +52,7 @@ func (bm *BoringMachine) DialTunnelHTTP(u *url.URL, paddr, addr string, timeout 
 		conn.Close()
 		return nil, cli.ErrorCat("Counld't send CONNECT request to proxy: ", err.Error())
 	}
-	pc := &proxyconn{conn: conn, br: bufio.NewReader(conn)}
+	pc := &proxyconn{Conn: conn, br: bufio.NewReader(conn)}
 	resp, err := http.ReadResponse(pc.br, nil)
 	if err != nil {
 		pc.Close()

@@ -1,8 +1,9 @@
-package sshconfig
+package ssh_config
 
 import (
 	"fmt"
 	"strings"
+	"unicode"
 )
 
 type sshParser struct {
@@ -122,15 +123,20 @@ func (p *sshParser) parseKV() sshParserStateFn {
 			}
 			patterns = append(patterns, pat)
 		}
+		// val.val at this point could be e.g. "example.com       "
+		hostval := strings.TrimRightFunc(val.val, unicode.IsSpace)
+		spaceBeforeComment := val.val[len(hostval):]
+		val.val = hostval
 		p.config.Hosts = append(p.config.Hosts, &Host{
-			Patterns:   patterns,
-			Nodes:      make([]Node, 0),
-			EOLComment: comment,
-			hasEquals:  hasEquals,
+			Patterns:           patterns,
+			Nodes:              make([]Node, 0),
+			EOLComment:         comment,
+			spaceBeforeComment: spaceBeforeComment,
+			hasEquals:          hasEquals,
 		})
 		return p.parseStart
 	}
-	lastHost := p.lastHost()
+	lastHost := p.config.Hosts[len(p.config.Hosts)-1]
 	if strings.ToLower(key.val) == "include" {
 		inc, err := NewInclude(strings.Split(val.val, " "), hasEquals, key.Position, comment, p.system, p.depth+1)
 		if err == ErrDepthExceeded {
@@ -144,32 +150,24 @@ func (p *sshParser) parseKV() sshParserStateFn {
 		lastHost.Nodes = append(lastHost.Nodes, inc)
 		return p.parseStart
 	}
+	shortval := strings.TrimRightFunc(val.val, unicode.IsSpace)
+	spaceAfterValue := val.val[len(shortval):]
 	kv := &KV{
-		Key:          key.val,
-		Value:        val.val,
-		Comment:      comment,
-		hasEquals:    hasEquals,
-		leadingSpace: key.Position.Col - 1,
-		position:     key.Position,
+		Key:             key.val,
+		Value:           shortval,
+		spaceAfterValue: spaceAfterValue,
+		Comment:         comment,
+		hasEquals:       hasEquals,
+		leadingSpace:    key.Position.Col - 1,
+		position:        key.Position,
 	}
 	lastHost.Nodes = append(lastHost.Nodes, kv)
 	return p.parseStart
 }
 
-func (p *sshParser) lastHost() *Host {
-	if len(p.config.Hosts) == 0 {
-		p.config.Hosts = append(p.config.Hosts, &Host{
-			implicit: true,
-			Patterns: []*Pattern{matchAll},
-			Nodes:    make([]Node, 0),
-		})
-	}
-	return p.config.Hosts[len(p.config.Hosts)-1]
-}
-
 func (p *sshParser) parseComment() sshParserStateFn {
 	comment := p.getToken()
-	lastHost := p.lastHost()
+	lastHost := p.config.Hosts[len(p.config.Hosts)-1]
 	lastHost.Nodes = append(lastHost.Nodes, &Empty{
 		Comment: comment.val,
 		// account for the "#" as well
@@ -186,7 +184,7 @@ func parseSSH(flow chan token, system bool, depth uint8) *Config {
 		}
 	}()
 
-	result := &Config{}
+	result := newConfig()
 	result.position = Position{1, 1}
 	parser := &sshParser{
 		flow:          flow,

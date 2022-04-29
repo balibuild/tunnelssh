@@ -3,10 +3,10 @@ module github.com/balibuild/tunnelssh
 go 1.18
 
 require (
-	github.com/balibuild/winio v0.5.1
+	github.com/Microsoft/go-winio v0.5.2
 	github.com/mattn/go-isatty v0.0.14
-	golang.org/x/crypto v0.0.0-20211117183948-ae814b36b871
-	golang.org/x/net v0.0.0-20211118161319-6a13c67c3ce4
-	golang.org/x/sys v0.0.0-20211117180635-dee7805ff2e1
-	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211
+	golang.org/x/crypto v0.0.0-20220427172511-eb4f295cb31f
+	golang.org/x/net v0.0.0-20220425223048-2871e0cb64e4
+	golang.org/x/sys v0.0.0-20220429121018-84afa8d3f7b3
+	golang.org/x/term v0.0.0-20220411215600-e5f449aeb171
 )

@@ -1,3 +1,4 @@
+//go:build windows
 // +build windows
 
 package main
@@ -8,8 +9,9 @@ import (
 	"syscall"
 	"time"
 
+	winio "github.com/Microsoft/go-winio"
 	"github.com/balibuild/tunnelssh/cli"
-	"github.com/balibuild/winio"
+
 	"golang.org/x/sys/windows"
 )
 

@@ -27,14 +27,13 @@
 //
 // BUG: the Match directive is currently unsupported; parsing a config with
 // a Match directive will trigger an error.
-package sshconfig
+package ssh_config
 
 import (
 	"bytes"
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	osuser "os/user"
 	"path/filepath"
@@ -44,7 +43,7 @@ import (
 	"sync"
 )
 
-const version = "1.0"
+const version = "1.2"
 
 var _ = version
 
@@ -82,6 +81,10 @@ var DefaultUserSettings = &UserSettings{
 	IgnoreErrors:       false,
 	systemConfigFinder: systemConfigFinder,
 	userConfigFinder:   userConfigFinder,
+}
+
+func systemConfigFinder() string {
+	return filepath.Join("/", "etc", "ssh", "ssh_config")
 }
 
 func findVal(c *Config, alias, key string) (string, error) {
@@ -275,7 +278,7 @@ func parseFile(filename string) (*Config, error) {
 }
 
 func parseWithDepth(filename string, depth uint8) (*Config, error) {
-	b, err := ioutil.ReadFile(filename)
+	b, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, err
 	}
@@ -290,10 +293,16 @@ func isSystem(filename string) bool {
 // Decode reads r into a Config, or returns an error if r could not be parsed as
 // an SSH config file.
 func Decode(r io.Reader) (*Config, error) {
-	b, err := ioutil.ReadAll(r)
+	b, err := io.ReadAll(r)
 	if err != nil {
 		return nil, err
 	}
+	return decodeBytes(b, false, 0)
+}
+
+// DecodeBytes reads b into a Config, or returns an error if r could not be
+// parsed as an SSH config file.
+func DecodeBytes(b []byte) (*Config, error) {
 	return decodeBytes(b, false, 0)
 }
 
@@ -489,7 +498,10 @@ type Host struct {
 	// A Node is either a key/value pair or a comment line.
 	Nodes []Node
 	// EOLComment is the comment (if any) terminating the Host line.
-	EOLComment   string
+	EOLComment string
+	// Whitespace if any between the Host declaration and a trailing comment.
+	spaceBeforeComment string
+
 	hasEquals    bool
 	leadingSpace int // TODO: handle spaces vs tabs here.
 	// The file starts with an implicit "Host *" declaration.
@@ -521,7 +533,7 @@ func (h *Host) Matches(alias string) bool {
 // String prints h as it would appear in a config file. Minor tweaks may be
 // present in the whitespace in the printed file.
 func (h *Host) String() string {
-	var buf bytes.Buffer
+	var buf strings.Builder
 	//lint:ignore S1002 I prefer to write it this way
 	if h.implicit == false {
 		buf.WriteString(strings.Repeat(" ", int(h.leadingSpace)))
@@ -537,8 +549,9 @@ func (h *Host) String() string {
 				buf.WriteString(" ")
 			}
 		}
+		buf.WriteString(h.spaceBeforeComment)
 		if h.EOLComment != "" {
-			buf.WriteString(" #")
+			buf.WriteByte('#')
 			buf.WriteString(h.EOLComment)
 		}
 		buf.WriteByte('\n')
@@ -559,12 +572,14 @@ type Node interface {
 // KV is a line in the config file that contains a key, a value, and possibly
 // a comment.
 type KV struct {
-	Key          string
-	Value        string
-	Comment      string
-	hasEquals    bool
-	leadingSpace int // Space before the key. TODO handle spaces vs tabs.
-	position     Position
+	Key   string
+	Value string
+	// Whitespace after the value but before any comment
+	spaceAfterValue string
+	Comment         string
+	hasEquals       bool
+	leadingSpace    int // Space before the key. TODO handle spaces vs tabs.
+	position        Position
 }
 
 // Pos returns k's Position.
@@ -572,8 +587,7 @@ func (k *KV) Pos() Position {
 	return k.position
 }
 
-// String prints k as it was parsed in the config file. There may be slight
-// changes to the whitespace between values.
+// String prints k as it was parsed in the config file.
 func (k *KV) String() string {
 	if k == nil {
 		return ""
@@ -582,9 +596,9 @@ func (k *KV) String() string {
 	if k.hasEquals {
 		equals = " = "
 	}
-	line := fmt.Sprintf("%s%s%s%s", strings.Repeat(" ", int(k.leadingSpace)), k.Key, equals, k.Value)
+	line := strings.Repeat(" ", int(k.leadingSpace)) + k.Key + equals + k.Value + k.spaceAfterValue
 	if k.Comment != "" {
-		line += " #" + k.Comment
+		line += "#" + k.Comment
 	}
 	return line
 }
@@ -680,7 +694,7 @@ func NewInclude(directives []string, hasEquals bool, pos Position, comment strin
 		if filepath.IsAbs(directives[i]) {
 			path = directives[i]
 		} else if system {
-			path = filepath.Join(systemdir(), directives[i])
+			path = filepath.Join("/etc/ssh", directives[i])
 		} else {
 			path = filepath.Join(homedir(), ".ssh", directives[i])
 		}
@@ -775,10 +789,10 @@ func init() {
 	}
 }
 
-func NewConfig() *Config {
+func newConfig() *Config {
 	return &Config{
 		Hosts: []*Host{
-			{
+			&Host{
 				implicit: true,
 				Patterns: []*Pattern{matchAll},
 				Nodes:    make([]Node, 0),

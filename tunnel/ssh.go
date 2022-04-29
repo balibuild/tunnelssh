@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/balibuild/tunnelssh/cli"
-	"github.com/balibuild/tunnelssh/external/sshconfig"
+	sshconfig "github.com/balibuild/tunnelssh/external/ssh_config"
 	"golang.org/x/crypto/ssh"
 )
 

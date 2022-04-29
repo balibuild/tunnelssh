@@ -1,8 +1,7 @@
-package sshconfig
+package ssh_config
 
 import (
 	"bytes"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -11,14 +10,19 @@ import (
 )
 
 func loadFile(t *testing.T, filename string) []byte {
-	data, err := ioutil.ReadFile(filename)
+	t.Helper()
+	data, err := os.ReadFile(filename)
 	if err != nil {
 		t.Fatal(err)
 	}
 	return data
 }
 
-var files = []string{"testdata/config1", "testdata/config2"}
+var files = []string{
+	"testdata/config1",
+	"testdata/config2",
+	"testdata/eol-comments",
+}
 
 func TestDecode(t *testing.T) {
 	for _, filename := range files {
@@ -29,7 +33,7 @@ func TestDecode(t *testing.T) {
 		}
 		out := cfg.String()
 		if out != string(data) {
-			t.Errorf("out != data: out: %q\ndata: %q", out, string(data))
+			t.Errorf("%s out != data: got:\n%s\nwant:\n%s\n", filename, out, string(data))
 		}
 	}
 }
@@ -67,6 +71,65 @@ func TestGetWithDefault(t *testing.T) {
 	}
 }
 
+func TestGetAllWithDefault(t *testing.T) {
+	us := &UserSettings{
+		userConfigFinder: testConfigFinder("testdata/config1"),
+	}
+
+	val, err := us.GetAllStrict("wap", "PasswordAuthentication")
+	if err != nil {
+		t.Fatalf("expected nil err, got %v", err)
+	}
+	if len(val) != 1 || val[0] != "yes" {
+		t.Errorf("expected to get PasswordAuthentication yes, got %q", val)
+	}
+}
+
+func TestGetIdentities(t *testing.T) {
+	us := &UserSettings{
+		userConfigFinder: testConfigFinder("testdata/identities"),
+	}
+
+	val, err := us.GetAllStrict("hasidentity", "IdentityFile")
+	if err != nil {
+		t.Errorf("expected nil err, got %v", err)
+	}
+	if len(val) != 1 || val[0] != "file1" {
+		t.Errorf(`expected ["file1"], got %v`, val)
+	}
+
+	val, err = us.GetAllStrict("has2identity", "IdentityFile")
+	if err != nil {
+		t.Errorf("expected nil err, got %v", err)
+	}
+	if len(val) != 2 || val[0] != "f1" || val[1] != "f2" {
+		t.Errorf(`expected [\"f1\", \"f2\"], got %v`, val)
+	}
+
+	val, err = us.GetAllStrict("randomhost", "IdentityFile")
+	if err != nil {
+		t.Errorf("expected nil err, got %v", err)
+	}
+	if len(val) != len(defaultProtocol2Identities) {
+		// TODO: return the right values here.
+		log.Printf("expected defaults, got %v", val)
+	} else {
+		for i, v := range defaultProtocol2Identities {
+			if val[i] != v {
+				t.Errorf("invalid %d in val, expected %s got %s", i, v, val[i])
+			}
+		}
+	}
+
+	val, err = us.GetAllStrict("protocol1", "IdentityFile")
+	if err != nil {
+		t.Errorf("expected nil err, got %v", err)
+	}
+	if len(val) != 1 || val[0] != "~/.ssh/identity" {
+		t.Errorf("expected [\"~/.ssh/identity\"], got %v", val)
+	}
+}
+
 func TestGetInvalidPort(t *testing.T) {
 	us := &UserSettings{
 		userConfigFinder: testConfigFinder("testdata/invalid-port"),
@@ -94,6 +157,20 @@ func TestGetNotFoundNoDefault(t *testing.T) {
 		t.Fatalf("expected nil err, got %v", err)
 	}
 	if val != "" {
+		t.Errorf("expected to get CanonicalDomains '', got %q", val)
+	}
+}
+
+func TestGetAllNotFoundNoDefault(t *testing.T) {
+	us := &UserSettings{
+		userConfigFinder: testConfigFinder("testdata/config1"),
+	}
+
+	val, err := us.GetAllStrict("wap", "CanonicalDomains")
+	if err != nil {
+		t.Fatalf("expected nil err, got %v", err)
+	}
+	if len(val) != 0 {
 		t.Errorf("expected to get CanonicalDomains '', got %q", val)
 	}
 }
@@ -194,7 +271,7 @@ func TestInclude(t *testing.T) {
 		t.Skip("skipping fs write in short mode")
 	}
 	testPath := filepath.Join(homedir(), ".ssh", "kevinburke-ssh-config-test-file")
-	err := ioutil.WriteFile(testPath, includeFile, 0644)
+	err := os.WriteFile(testPath, includeFile, 0644)
 	if err != nil {
 		t.Skipf("couldn't write SSH config file: %v", err.Error())
 	}
@@ -213,7 +290,7 @@ func TestIncludeSystem(t *testing.T) {
 		t.Skip("skipping fs write in short mode")
 	}
 	testPath := filepath.Join("/", "etc", "ssh", "kevinburke-ssh-config-test-file")
-	err := ioutil.WriteFile(testPath, includeFile, 0644)
+	err := os.WriteFile(testPath, includeFile, 0644)
 	if err != nil {
 		t.Skipf("couldn't write SSH config file: %v", err.Error())
 	}
@@ -237,7 +314,7 @@ func TestIncludeRecursive(t *testing.T) {
 		t.Skip("skipping fs write in short mode")
 	}
 	testPath := filepath.Join(homedir(), ".ssh", "kevinburke-ssh-config-recursive-include")
-	err := ioutil.WriteFile(testPath, recursiveIncludeFile, 0644)
+	err := os.WriteFile(testPath, recursiveIncludeFile, 0644)
 	if err != nil {
 		t.Skipf("couldn't write SSH config file: %v", err.Error())
 	}
@@ -258,7 +335,7 @@ func TestIncludeString(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping fs write in short mode")
 	}
-	data, err := ioutil.ReadFile("testdata/include")
+	data, err := os.ReadFile("testdata/include")
 	if err != nil {
 		log.Fatal(err)
 	}
